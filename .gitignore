@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+
+# Linkie Claw
+
+# Scheduler
+scheduler/.venv/
+scheduler/.pytest_cache/
+scheduler/__pycache__/
+scheduler/app/__pycache__/
+scheduler/.env
+
+# Database files
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+*.db
+*.db-journal
+
+# Build cache
+tsconfig.tsbuildinfo
+
+# OS
+.DS_Store
+
+# Screenshots (dev artifacts)
+*.png
+!public/**/*.png
