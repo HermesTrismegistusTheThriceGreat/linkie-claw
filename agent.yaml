@@ -1,0 +1,15 @@
+version: 1
+agent:
+  name: linkie-claw
+  extend: default
+  system_prompt_path: ./.agents/system.md
+  subagents:
+    coder:
+      path: ./.agents/coder.yaml
+      description: "Implementation work: schema changes, API routes, components, pages, database migrations, styling, and new files"
+    tester:
+      path: ./.agents/tester.yaml
+      description: "Verification: run typecheck, lint, build, and walk through phase verification checklists"
+    reviewer:
+      path: ./.agents/reviewer.yaml
+      description: "Quality review: check convention compliance, security (auth on routes, user_id scoping), design consistency, and data-testid coverage"

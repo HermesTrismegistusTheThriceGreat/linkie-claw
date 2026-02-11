@@ -7,6 +7,7 @@ export type PostStatus =
 
 export interface Post {
   id: string;
+  userId: string;
   title: string;
   content: string;
   imageUrl?: string | null;
@@ -15,6 +16,7 @@ export interface Post {
   status: PostStatus;
   linkedinPostUrn?: string;
   errorMessage?: string;
+  retryCount: number;
   createdAt: Date;
   updatedAt: Date;
 }

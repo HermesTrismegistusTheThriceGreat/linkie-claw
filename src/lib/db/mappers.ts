@@ -7,6 +7,7 @@ import type { Post as FrontendPost, PostStatus } from "@/types/post";
 export function mapDbPostToFrontend(dbPost: DbPost): FrontendPost {
   return {
     id: dbPost.id,
+    userId: dbPost.user_id,
     title: dbPost.title,
     content: dbPost.content,
     imageUrl: dbPost.image_url ?? null,
@@ -15,6 +16,7 @@ export function mapDbPostToFrontend(dbPost: DbPost): FrontendPost {
     status: dbPost.status as PostStatus,
     linkedinPostUrn: dbPost.linkedin_post_urn ?? undefined,
     errorMessage: dbPost.error_message ?? undefined,
+    retryCount: dbPost.retry_count,
     createdAt: dbPost.created_at,
     updatedAt: dbPost.updated_at,
   };

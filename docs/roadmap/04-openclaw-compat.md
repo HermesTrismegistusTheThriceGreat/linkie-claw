@@ -1,4 +1,4 @@
-# Phase 3: OpenClaw Bot Compatibility
+# Phase 4: OpenClaw Bot Compatibility
 
 ## Goal
 Optimize all architecture, naming conventions, component structure, and UI elements so OpenClaw can navigate, read, and interact with the app (click buttons, fill forms) without ambiguity.
@@ -7,13 +7,13 @@ Optimize all architecture, naming conventions, component structure, and UI eleme
 OpenClaw can navigate every page, click all buttons, and fill all forms without ambiguity.
 
 ## Depends On
-Phase 2 (multi-user must be in place so page structure is final)
+Phase 3 (Multi-User Support)
 
 ---
 
 ## Step-by-Step Plan
 
-### 3.1 — Add `data-testid` Attributes to All Interactive Elements
+### 4.1 — Add `data-testid` Attributes to All Interactive Elements
 
 Apply `data-testid` to every clickable, fillable, or visible-state element across the entire app. Use a consistent, hierarchical naming convention.
 
@@ -33,7 +33,7 @@ Examples:
 - `data-testid="login-btn-google"`
 - `data-testid="login-btn-github"`
 
-#### 3.1.1 — Sidebar (`src/components/layout/sidebar.tsx`)
+#### 4.1.1 — Sidebar (`src/components/layout/sidebar.tsx`)
 Add `data-testid` to every navigation link and button:
 ```tsx
 <Link data-testid={`sidebar-nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`} ... >
@@ -49,13 +49,13 @@ Add to the user card:
 <div data-testid="sidebar-user-card" ... >
 ```
 
-#### 3.1.2 — Login Page (`src/app/login/page.tsx`)
+#### 4.1.2 — Login Page (`src/app/login/page.tsx`)
 ```tsx
 <button data-testid="login-btn-google">Sign in with Google</button>
 <button data-testid="login-btn-github">Sign in with GitHub</button>
 ```
 
-#### 3.1.3 — Dashboard (`src/app/page.tsx`)
+#### 4.1.3 — Dashboard (`src/app/page.tsx`)
 ```tsx
 <StatCard data-testid={`dashboard-stat-${card.label.toLowerCase().replace(/\s+/g, '-')}`} ... />
 <div data-testid="dashboard-recent-drafts" ... />
@@ -64,7 +64,7 @@ Add to the user card:
 <div data-testid="dashboard-ai-inspiration" ... />
 ```
 
-#### 3.1.4 — Calendar Page (`src/app/calendar/page.tsx`)
+#### 4.1.4 — Calendar Page (`src/app/calendar/page.tsx`)
 ```tsx
 <button data-testid="calendar-btn-prev-month" ... />
 <button data-testid="calendar-btn-next-month" ... />
@@ -74,7 +74,7 @@ Add to the user card:
 <div data-testid={`calendar-post-${post.id}`} ... />
 ```
 
-#### 3.1.5 — Create / AI Writer Page (`src/app/create/page.tsx`)
+#### 4.1.5 — Create / AI Writer Page (`src/app/create/page.tsx`)
 ```tsx
 <textarea data-testid="writer-input-idea" ... />
 <button data-testid="writer-btn-generate" ... />
@@ -84,7 +84,7 @@ Add to the user card:
 <button data-testid="writer-btn-schedule" ... />
 ```
 
-#### 3.1.6 — Schedule Modal
+#### 4.1.6 — Schedule Modal
 ```tsx
 <input data-testid="schedule-input-date" ... />
 <input data-testid="schedule-input-time" ... />
@@ -92,7 +92,7 @@ Add to the user card:
 <button data-testid="schedule-btn-cancel" ... />
 ```
 
-#### 3.1.7 — Settings Page (Phase 4)
+#### 4.1.7 — Settings Page (Phase 5)
 ```tsx
 <input data-testid="settings-input-linkedin-url" ... />
 <button data-testid="settings-btn-connect-linkedin" ... />
@@ -100,7 +100,7 @@ Add to the user card:
 <button data-testid="settings-btn-save" ... />
 ```
 
-#### 3.1.8 — Analytics Page (Phase 7)
+#### 4.1.8 — Analytics Page (Phase 8)
 ```tsx
 <div data-testid="analytics-chart-impressions" ... />
 <div data-testid="analytics-chart-engagement" ... />
@@ -110,9 +110,9 @@ Add to the user card:
 
 ---
 
-### 3.2 — Semantic HTML Improvements
+### 4.2 — Semantic HTML Improvements
 
-#### 3.2.1 — Use proper HTML5 landmarks
+#### 4.2.1 — Use proper HTML5 landmarks
 
 Ensure every page follows this structure:
 ```html
@@ -122,54 +122,54 @@ Ensure every page follows this structure:
 </main>
 ```
 
-#### 3.2.2 — Replace div-based buttons with `<button>` elements
+#### 4.2.2 — Replace div-based buttons with `<button>` elements
 Audit all components for `<div onClick={...}>` patterns and replace with semantic `<button>` elements.
 
-#### 3.2.3 — Ensure heading hierarchy
+#### 4.2.3 — Ensure heading hierarchy
 - Each page should have exactly one `<h1>`
 - Subsections use `<h2>`, `<h3>`, etc. in order
 - No skipped heading levels
 
-#### 3.2.4 — Use `<nav>` for navigation
+#### 4.2.4 — Use `<nav>` for navigation
 The sidebar already uses `<nav>` ✅. Verify this is preserved.
 
-#### 3.2.5 — Form labels
+#### 4.2.5 — Form labels
 Every `<input>`, `<textarea>`, and `<select>` must have an associated `<label>` element (or `aria-label` if visually hidden).
 
 ---
 
-### 3.3 — Predictable Layouts
+### 4.3 — Predictable Layouts
 
-#### 3.3.1 — No overlapping elements
+#### 4.3.1 — No overlapping elements
 Ensure no absolutely positioned elements overlap interactive targets. This is especially important for:
 - Calendar day cells (posts must not overflow)
 - Tooltip positioning
 - Modal z-indexing
 
-#### 3.3.2 — Consistent element ordering
+#### 4.3.2 — Consistent element ordering
 Navigation items, form fields, and action buttons should appear in the same order across all pages.
 
-#### 3.3.3 — Visible focus indicators
+#### 4.3.3 — Visible focus indicators
 Ensure all interactive elements have visible `:focus-visible` styles so keyboard/bot navigation is clear.
 
 ---
 
-### 3.4 — ARIA Attributes for Dynamic Content
+### 4.4 — ARIA Attributes for Dynamic Content
 
-#### 3.4.1 — Loading states
+#### 4.4.1 — Loading states
 ```tsx
 <div aria-busy={isLoading} aria-live="polite" data-testid="calendar-grid">
   {isLoading ? <p>Loading...</p> : <CalendarGrid ... />}
 </div>
 ```
 
-#### 3.4.2 — Modals
+#### 4.4.2 — Modals
 Ensure the schedule modal uses `role="dialog"`, `aria-modal="true"`, and `aria-labelledby` pointing to the modal title.
 
-#### 3.4.3 — Toast notifications
+#### 4.4.3 — Toast notifications
 The Sonner toaster already handles ARIA. Verify `role="alert"` is present.
 
-#### 3.4.4 — Status indicators
+#### 4.4.4 — Status indicators
 LinkedIn connection status on the Settings page should use `aria-label` to describe the state:
 ```tsx
 <div data-testid="settings-linkedin-status" aria-label="LinkedIn: Connected">

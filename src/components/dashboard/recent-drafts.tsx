@@ -2,8 +2,11 @@ import Link from "next/link";
 import { getRecentDrafts } from "@/lib/queries/posts";
 import { DraftCard } from "./draft-card";
 
+// TODO: Replace with actual auth user in Phase 2
+const MOCK_USER_ID = "mock-user-001";
+
 export async function RecentDrafts() {
-  const drafts = await getRecentDrafts(2);
+  const drafts = await getRecentDrafts(MOCK_USER_ID, 2);
 
   return (
     <section className="space-y-4">

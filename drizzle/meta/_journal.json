@@ -15,6 +15,13 @@
       "when": 1770303518867,
       "tag": "0001_melodic_glorian",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1770816209395,
+      "tag": "0002_gigantic_wallow",
+      "breakpoints": true
     }
   ]
 }

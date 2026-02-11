@@ -1,4 +1,4 @@
-# Phase 8: Schedule Page — Calendar Polish & Post Editing
+# Phase 6: Schedule Page — Calendar Polish & Post Editing
 
 ## Goal
 Fix post rendering on the calendar so each post displays cleanly with no overlap. Make posts clickable with an edit modal for text, date, images, and deletion.
@@ -7,15 +7,15 @@ Fix post rendering on the calendar so each post displays cleanly with no overlap
 Posts render without overlap on the calendar, a user can click any post, edit it in a modal, save, and see the calendar update in real time.
 
 ## Depends On
-Phase 2 (multi-user — posts are user-scoped)
+Phase 3 (Multi-User Support) — user-scoped posts
 
 ---
 
 ## Step-by-Step Plan
 
-### 8.1 — Fix Calendar Post Rendering (No Overlap)
+### 6.1 — Fix Calendar Post Rendering (No Overlap)
 
-#### 8.1.1 — Analyze current rendering issue
+#### 6.1.1 — Analyze current rendering issue
 
 The current `CalendarDay` component (`src/components/calendar/calendar-day.tsx`) renders all posts in a vertical stack:
 ```tsx
@@ -28,7 +28,7 @@ The current `CalendarDay` component (`src/components/calendar/calendar-day.tsx`)
 
 The day cell is fixed at `h-32` (128px). With multiple posts, the cards overflow the cell boundary.
 
-#### 8.1.2 — Solution: Limit visible posts + overflow indicator
+#### 6.1.2 — Solution: Limit visible posts + overflow indicator
 
 ```tsx
 const MAX_VISIBLE_POSTS = 2;
@@ -51,7 +51,7 @@ const hiddenCount = posts.length - MAX_VISIBLE_POSTS;
 </div>
 ```
 
-#### 8.1.3 — Make PostCard more compact
+#### 6.1.3 — Make PostCard more compact
 
 Update `src/components/calendar/post-card.tsx` to be smaller:
 - Reduce padding to `p-1.5`
@@ -76,16 +76,16 @@ Update `src/components/calendar/post-card.tsx` to be smaller:
 </button>
 ```
 
-#### 8.1.4 — Add overflow hidden to day cell
+#### 6.1.4 — Add overflow hidden to day cell
 ```tsx
 <div className="h-32 p-3 border-r border-b overflow-hidden relative">
 ```
 
 ---
 
-### 8.2 — Build Post Edit Modal
+### 6.2 — Build Post Edit Modal
 
-#### 8.2.1 — Create `src/components/calendar/post-edit-modal.tsx`
+#### 6.2.1 — Create `src/components/calendar/post-edit-modal.tsx`
 
 Modal structure:
 ```
@@ -109,14 +109,14 @@ Post Edit Modal
 │   └── Button (primary): Save Changes
 ```
 
-#### 8.2.2 — Modal implementation
+#### 6.2.2 — Modal implementation
 
 Use the existing Radix UI Dialog component (from `src/components/ui/`):
 
 ```tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Post } from "@/types/post";
 
@@ -170,7 +170,7 @@ export function PostEditModal({ post, open, onOpenChange, onSave, onDelete }: Po
         <DialogHeader>
           <DialogTitle>Edit Post</DialogTitle>
         </DialogHeader>
-        
+
         {/* Title */}
         <div>
           <label htmlFor="post-title" className="text-sm font-bold">Title</label>
@@ -182,7 +182,7 @@ export function PostEditModal({ post, open, onOpenChange, onSave, onDelete }: Po
             className="w-full p-3 rounded-xl border ..."
           />
         </div>
-        
+
         {/* Content */}
         <div>
           <label htmlFor="post-content" className="text-sm font-bold">Content</label>
@@ -198,16 +198,16 @@ export function PostEditModal({ post, open, onOpenChange, onSave, onDelete }: Po
             {content.length} / 3000 characters
           </p>
         </div>
-        
+
         {/* Image */}
         {imageUrl && <img src={imageUrl} alt="Post image" className="rounded-xl" />}
-        
+
         {/* Schedule */}
         <div className="flex gap-4">
           <input type="date" data-testid="post-edit-date" ... />
           <input type="time" data-testid="post-edit-time" ... />
         </div>
-        
+
         {/* Actions */}
         <div className="flex justify-between mt-4">
           <button data-testid="post-edit-delete" onClick={handleDelete} className="text-red-500 ...">
@@ -228,9 +228,9 @@ export function PostEditModal({ post, open, onOpenChange, onSave, onDelete }: Po
 
 ---
 
-### 8.3 — Wire Modal to Calendar Page
+### 6.3 — Wire Modal to Calendar Page
 
-#### 8.3.1 — Update `src/app/calendar/page.tsx`
+#### 6.3.1 — Update `src/app/calendar/page.tsx`
 
 Add modal state and API handlers:
 
@@ -265,7 +265,7 @@ const handleDelete = async (id: string) => {
 };
 ```
 
-#### 8.3.2 — Pass click handler through component tree
+#### 6.3.2 — Pass click handler through component tree
 ```
 CalendarPage → CalendarGrid → CalendarDay → PostCard
 ```
@@ -274,19 +274,19 @@ Add `onPostClick` prop through the component chain.
 
 ---
 
-### 8.4 — Handle Reschedule via Drag (Optional Enhancement)
+### 6.4 — Handle Reschedule via Drag (Optional Enhancement)
 
 If time permits, add drag-to-reschedule:
 1. Make PostCard draggable (`draggable="true"`)
 2. Make CalendarDay a drop target
 3. On drop, call `PATCH /api/posts/{id}` with new `scheduledAt`
-4. Also call `PUT /schedule/{id}` on the scheduler to update APScheduler
+4. Re-fetch calendar posts to reflect change
 
 > This is an enhancement — not required for the "done when" criteria. Mark as optional in implementation.
 
 ---
 
-### 8.5 — Immediate Calendar Re-render
+### 6.5 — Immediate Calendar Re-render
 
 After saving or deleting via the modal, the calendar must update immediately without a full page reload:
 
@@ -319,3 +319,4 @@ The calendar already uses `useState` for posts, so updating the state will trigg
 - [ ] Character count updates as user types
 - [ ] All modal elements have `data-testid` attributes
 - [ ] Modal has proper ARIA attributes (`role="dialog"`, `aria-modal`)
+- [ ] `npm run typecheck` passes with no errors

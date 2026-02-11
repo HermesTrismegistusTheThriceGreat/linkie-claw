@@ -11,12 +11,14 @@ import type { Post } from "@/types/post";
 
 interface ApiPost {
   id: string;
+  userId: string;
   title: string;
   content: string;
   imageUrl?: string;
   scheduledAt?: string;
   publishedAt?: string;
   status: Post["status"];
+  retryCount: number;
   createdAt: string;
   updatedAt: string;
 }
