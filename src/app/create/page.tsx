@@ -109,7 +109,7 @@ export default function CreatePage() {
 
   return (
     <AuroraBackground>
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen" data-testid="page-create">
         <Sidebar />
         <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
           <div className="max-w-[1400px] mx-auto">

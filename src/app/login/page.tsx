@@ -28,6 +28,7 @@ export default function LoginPage() {
           >
             <button
               type="submit"
+              data-testid="login-btn-google"
               className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 hover:border-gray-300 group"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -62,6 +63,7 @@ export default function LoginPage() {
           >
             <button
               type="submit"
+              data-testid="login-btn-github"
               className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl bg-slate-900 text-white shadow-sm hover:shadow-md transition-all duration-200 hover:bg-slate-800 group"
             >
               <Github className="w-5 h-5" />

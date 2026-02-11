@@ -11,7 +11,7 @@ interface ImageGridProps {
 
 export function ImageGrid({ images, selectedId, onSelect }: ImageGridProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="writer-images-section">
       <h3 className="text-[#333333] text-xl font-bold flex items-center gap-2">
         <span className="material-symbols-outlined text-[#ee5b2b]">palette</span>
         Generated Visuals

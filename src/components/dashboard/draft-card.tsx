@@ -20,7 +20,7 @@ export function DraftCard({ draft }: DraftCardProps) {
   const relativeTime = getRelativeTime(draft.updatedAt);
 
   return (
-    <div className="glass-card p-4 rounded-2xl space-y-3 group cursor-pointer hover:border-primary/50 transition-colors">
+    <div data-testid={`dashboard-draft-${draft.id}`} className="glass-card p-4 rounded-2xl space-y-3 group cursor-pointer hover:border-primary/50 transition-colors">
       <div
         className="w-full aspect-[16/10] bg-center bg-cover rounded-xl shadow-inner overflow-hidden relative"
         style={{ backgroundImage: `url("${draft.imageUrl ?? "/placeholder-image.jpg"}")` }}
@@ -39,10 +39,10 @@ export function DraftCard({ draft }: DraftCardProps) {
           <span>Edited {relativeTime}</span>
         </div>
         <div className="pt-2 flex gap-2">
-          <button className="flex-1 py-2 bg-slate-100 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors">
+          <button data-testid={`dashboard-draft-${draft.id}-btn-edit`} className="flex-1 py-2 bg-slate-100 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors">
             Edit
           </button>
-          <button className="flex-1 py-2 bg-primary/10 text-primary rounded-lg text-xs font-bold hover:bg-primary/20 transition-colors">
+          <button data-testid={`dashboard-draft-${draft.id}-btn-schedule`} className="flex-1 py-2 bg-primary/10 text-primary rounded-lg text-xs font-bold hover:bg-primary/20 transition-colors">
             Schedule
           </button>
         </div>

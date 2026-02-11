@@ -16,6 +16,7 @@ export function PostCard({ post, onHover, className }: PostCardProps) {
 
   return (
     <div
+      data-testid={`calendar-post-${post.id}`}
       className={cn(
         "rounded-lg p-2 cursor-pointer transition-transform",
         isScheduled

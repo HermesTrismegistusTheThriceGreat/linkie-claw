@@ -54,11 +54,13 @@ export function Sidebar({ user }: SidebarProps) {
       <nav className="flex-1 px-4 py-4 space-y-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
+          const testId = `sidebar-nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`;
 
           if (item.disabled) {
             return (
               <div
                 key={item.href}
+                data-testid={testId}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl opacity-50 cursor-not-allowed"
               >
                 <span className="material-symbols-outlined">{item.icon}</span>
@@ -71,6 +73,7 @@ export function Sidebar({ user }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
+              data-testid={testId}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
                 isActive
@@ -93,7 +96,7 @@ export function Sidebar({ user }: SidebarProps) {
       </nav>
 
       {/* User Card */}
-      <div className="px-4 pb-4">
+      <div className="px-4 pb-4" data-testid="sidebar-user-card">
         <UserCard name={user?.name} email={user?.email} image={user?.image} />
       </div>
 
@@ -101,6 +104,7 @@ export function Sidebar({ user }: SidebarProps) {
       <div className="px-6 pb-6">
         <Link
           href="/create"
+          data-testid="sidebar-btn-new-post"
           className="w-full py-4 bg-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-xl shadow-primary/25 hover:scale-[1.02] active:scale-95 transition-transform"
         >
           <span className="material-symbols-outlined text-xl">add</span>

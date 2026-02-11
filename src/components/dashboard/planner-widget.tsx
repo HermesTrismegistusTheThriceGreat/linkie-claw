@@ -10,9 +10,9 @@ interface PlannerWidgetProps {
 
 export async function PlannerWidget({ userId }: PlannerWidgetProps) {
   const posts = await getUpcomingPosts(userId, 4);
+  const today = new Date();
 
   // Generate next 4 days starting from today
-  const today = new Date();
   const days = Array.from({ length: 4 }, (_, i) => {
     const date = new Date(today);
     date.setDate(date.getDate() + i);
@@ -40,25 +40,26 @@ export async function PlannerWidget({ userId }: PlannerWidgetProps) {
   });
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-4" data-testid="dashboard-planner">
       <div className="flex items-center justify-between px-2">
-        <h3 className="text-xl font-bold">Planner</h3>
-        <button className="p-2 glass-card rounded-lg flex items-center justify-center">
+        <h2 className="text-xl font-bold">Planner</h2>
+        <a href="/calendar" data-testid="dashboard-btn-open-calendar" className="p-2 glass-card rounded-lg flex items-center justify-center" aria-label="Open calendar">
           <span className="material-symbols-outlined text-lg">
             calendar_today
           </span>
-        </button>
+        </a>
       </div>
       <div className="glass-card rounded-2xl divide-y divide-white/20">
         {days.map((day) => (
-          <PlannerDay
-            key={day.date.toISOString()}
-            date={day.date}
-            dayName={day.dayName}
-            dayNumber={day.dayNumber}
-            post={day.post}
-            color={day.color}
-          />
+          <div key={day.date.toISOString()} data-testid={`dashboard-planner-day-${format(day.date, 'yyyy-MM-dd')}`}>
+            <PlannerDay
+              date={day.date}
+              dayName={day.dayName}
+              dayNumber={day.dayNumber}
+              post={day.post}
+              color={day.color}
+            />
+          </div>
         ))}
       </div>
     </section>

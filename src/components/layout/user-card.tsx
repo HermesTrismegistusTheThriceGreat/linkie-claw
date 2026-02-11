@@ -32,6 +32,7 @@ export function UserCard({ name, email, image }: UserCardProps) {
       <form action={signOut}>
         <button
           type="submit"
+          data-testid="sidebar-btn-sign-out"
           className="w-full py-2 flex items-center justify-center gap-2 bg-primary/10 text-primary text-xs font-bold rounded-lg hover:bg-primary/20 transition-colors"
           aria-label="Sign out"
         >

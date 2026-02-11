@@ -29,18 +29,20 @@ export function CalendarHeader({
       <div className="flex items-center gap-4">
         <button
           onClick={onPreviousMonth}
+          data-testid="calendar-btn-prev-month"
           className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
           aria-label="Previous month"
         >
           <span className="material-symbols-outlined">chevron_left</span>
         </button>
 
-        <h1 className="text-2xl font-bold">
+        <h1 className="text-2xl font-bold" data-testid="calendar-month-label">
           {format(currentMonth, "MMMM yyyy")}
         </h1>
 
         <button
           onClick={onNextMonth}
+          data-testid="calendar-btn-next-month"
           className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
           aria-label="Next month"
         >
@@ -58,6 +60,7 @@ export function CalendarHeader({
           <input
             type="text"
             placeholder="Search posts..."
+            data-testid="calendar-search-input"
             className={cn(
               "pl-10 pr-4 py-2",
               "bg-background dark:bg-background-dark/50",
@@ -69,7 +72,7 @@ export function CalendarHeader({
         </div>
 
         {/* Create Post Button - Coral Gradient */}
-        <Link href="/create">
+        <Link href="/create" data-testid="calendar-btn-create-post">
           <button
             className={cn(
               "coral-gradient",

@@ -16,6 +16,7 @@ export function VariationCard({
 }: VariationCardProps) {
   return (
     <div
+      data-testid={`writer-variation-${variation.id}`}
       className={cn(
         "min-w-[280px] p-5 rounded-lg flex flex-col gap-3 snap-start cursor-pointer",
         "bg-white transition-all",

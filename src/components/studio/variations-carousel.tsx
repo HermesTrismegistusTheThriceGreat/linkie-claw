@@ -15,7 +15,7 @@ export function VariationsCarousel({
   onSelect,
 }: VariationsCarouselProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="writer-variations-section">
       <h3 className="text-[#333333] text-xl font-bold flex items-center gap-2">
         <span className="material-symbols-outlined text-[#ee5b2b]">
           dynamic_feed

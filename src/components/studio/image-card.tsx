@@ -12,6 +12,7 @@ interface ImageCardProps {
 export function ImageCard({ image, isSelected, onSelect }: ImageCardProps) {
   return (
     <div
+      data-testid={`writer-image-${image.id}`}
       className={cn(
         "relative group aspect-square rounded-lg overflow-hidden cursor-pointer shadow-sm transition-all",
         isSelected

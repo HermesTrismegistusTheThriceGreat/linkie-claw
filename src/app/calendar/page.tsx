@@ -70,7 +70,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="aurora-bg min-h-screen flex">
+    <div className="aurora-bg min-h-screen flex" data-testid="page-calendar">
       <Sidebar />
 
       <main className="flex-1 flex flex-col overflow-y-auto">
@@ -84,7 +84,7 @@ export default function CalendarPage() {
           <ViewToggles activeView="monthly" postCount={posts.length} />
 
           {isLoading ? (
-            <div className="glass-card rounded-2xl shadow-2xl p-12 flex items-center justify-center">
+            <div aria-busy="true" aria-live="polite" data-testid="calendar-loading" className="glass-card rounded-2xl shadow-2xl p-12 flex items-center justify-center">
               <p className="text-gray-500">Loading calendar...</p>
             </div>
           ) : (

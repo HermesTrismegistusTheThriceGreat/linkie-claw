@@ -17,7 +17,7 @@ export function LinkedInPreview({
   const isPlaceholder = !content;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="writer-linkedin-preview">
       <div className="flex items-center justify-between px-2">
         <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400">
           Live Preview

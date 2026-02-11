@@ -13,7 +13,7 @@ export default async function DashboardPage() {
 
   return (
     <AuroraBackground className="min-h-screen">
-      <div className="flex">
+      <div className="flex" data-testid="page-dashboard">
         <Sidebar user={user} />
         <main className="flex-1 overflow-y-auto z-10">
           <div className="max-w-6xl mx-auto p-10 space-y-8">
