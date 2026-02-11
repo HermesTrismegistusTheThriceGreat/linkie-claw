@@ -17,7 +17,7 @@ const navItems: NavItem[] = [
   { href: "/calendar", icon: "calendar_month", label: "Content Calendar" },
   { href: "/analytics", icon: "insights", label: "Analytics", disabled: true },
   { href: "/create", icon: "auto_fix", label: "AI Writer" },
-  { href: "/settings", icon: "settings", label: "Settings", disabled: true },
+  { href: "/settings", icon: "settings", label: "Settings" },
 ];
 
 interface SidebarProps {
