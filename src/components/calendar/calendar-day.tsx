@@ -8,19 +8,27 @@ import { PostTooltip } from "./post-tooltip";
 
 interface CalendarDayProps {
   day: number;
+  dayKey: string;
   isCurrentMonth: boolean;
   isToday?: boolean;
   posts?: Post[];
   onPostHover?: (postId: string | null) => void;
+  onPostClick?: (post: Post) => void;
+  onShowMore?: (day: number, posts: Post[]) => void;
   className?: string;
 }
 
+const MAX_VISIBLE_POSTS = 2;
+
 export function CalendarDay({
   day,
+  dayKey,
   isCurrentMonth,
   isToday = false,
   posts = [],
   onPostHover,
+  onPostClick,
+  onShowMore,
   className,
 }: CalendarDayProps) {
   const [hoveredPostId, setHoveredPostId] = useState<string | null>(null);
@@ -32,10 +40,13 @@ export function CalendarDay({
 
   const hoveredPost = posts.find((p) => p.id === hoveredPostId);
 
+  const visiblePosts = posts.slice(0, MAX_VISIBLE_POSTS);
+  const hiddenCount = posts.length - MAX_VISIBLE_POSTS;
+
   return (
     <div
       className={cn(
-        "h-32 p-3 border-r border-b border-black/5 relative",
+        "h-32 p-3 border-r border-b border-black/5 relative overflow-hidden",
         // Previous/next month styling
         !isCurrentMonth && "opacity-30",
         // Current month styling
@@ -56,14 +67,24 @@ export function CalendarDay({
 
       {/* Post cards */}
       {posts.length > 0 && (
-        <div className="mt-2 flex flex-col gap-1.5">
-          {posts.map((post) => (
+        <div className="mt-2 flex flex-col gap-1">
+          {visiblePosts.map((post) => (
             <PostCard
               key={post.id}
               post={post}
               onHover={handlePostHover}
+              onClick={onPostClick}
             />
           ))}
+          {hiddenCount > 0 && (
+            <button
+              data-testid={`calendar-day-${dayKey}-more`}
+              className="text-xs text-primary font-bold hover:underline text-left px-1"
+              onClick={() => onShowMore?.(day, posts)}
+            >
+              +{hiddenCount} more
+            </button>
+          )}
         </div>
       )}
 

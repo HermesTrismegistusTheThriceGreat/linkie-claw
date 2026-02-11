@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { subMonths, addMonths, format } from "date-fns";
+import { toast } from "sonner";
 import { Sidebar } from "@/components/layout/sidebar";
 import { CalendarHeader } from "@/components/calendar/header";
 import { ViewToggles } from "@/components/calendar/view-toggles";
 import { CalendarGrid } from "@/components/calendar/calendar-grid";
+import { PostEditModal } from "@/components/calendar/post-edit-modal";
 import { Fab } from "@/components/calendar/fab";
 import type { Post } from "@/types/post";
 
@@ -37,29 +39,34 @@ export default function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Modal state
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Fetch posts for current month via API
-  useEffect(() => {
-    async function fetchPosts() {
-      setIsLoading(true);
-      try {
-        const monthKey = format(currentMonth, "yyyy-MM");
-        const response = await fetch(`/api/posts?month=${monthKey}`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch posts");
-        }
-        const apiPosts: ApiPost[] = await response.json();
-        setPosts(apiPosts.map(parseApiPost));
-      } catch (error) {
-        console.error("Failed to fetch posts:", error);
-        setPosts([]);
-      } finally {
-        setIsLoading(false);
+  const fetchPosts = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const monthKey = format(currentMonth, "yyyy-MM");
+      const response = await fetch(`/api/posts?month=${monthKey}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch posts");
       }
+      const apiPosts: ApiPost[] = await response.json();
+      setPosts(apiPosts.map(parseApiPost));
+    } catch (error) {
+      console.error("Failed to fetch posts:", error);
+      toast.error("Failed to load posts");
+      setPosts([]);
+    } finally {
+      setIsLoading(false);
     }
-
-    fetchPosts();
   }, [currentMonth]);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
 
   const handlePreviousMonth = () => {
     setCurrentMonth((prev) => subMonths(prev, 1));
@@ -67,6 +74,44 @@ export default function CalendarPage() {
 
   const handleNextMonth = () => {
     setCurrentMonth((prev) => addMonths(prev, 1));
+  };
+
+  const handlePostClick = (post: Post) => {
+    setEditingPost(post);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSave = async (id: string, data: Partial<Post>) => {
+    const response = await fetch(`/api/posts/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...data,
+        scheduledAt: data.scheduledAt?.toISOString(),
+      }),
+    });
+    
+    if (response.ok) {
+      await fetchPosts();
+      toast.success("Post updated successfully!");
+    } else {
+      const error = await response.json();
+      toast.error(error.message || "Failed to update post");
+      throw new Error(error.message || "Failed to update post");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const response = await fetch(`/api/posts/${id}`, { method: "DELETE" });
+    
+    if (response.ok) {
+      await fetchPosts();
+      toast.success("Post deleted");
+    } else {
+      const error = await response.json();
+      toast.error(error.message || "Failed to delete post");
+      throw new Error(error.message || "Failed to delete post");
+    }
   };
 
   return (
@@ -88,12 +133,24 @@ export default function CalendarPage() {
               <p className="text-gray-500">Loading calendar...</p>
             </div>
           ) : (
-            <CalendarGrid currentMonth={currentMonth} posts={posts} />
+            <CalendarGrid 
+              currentMonth={currentMonth} 
+              posts={posts} 
+              onPostClick={handlePostClick}
+            />
           )}
         </div>
       </main>
 
       <Fab />
+
+      <PostEditModal
+        post={editingPost}
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        onSave={handleSave}
+        onDelete={handleDelete}
+      />
     </div>
   );
 }
