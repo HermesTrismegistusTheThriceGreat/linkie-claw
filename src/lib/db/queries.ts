@@ -436,3 +436,92 @@ export async function cleanupExpiredLinkedinOauthStates() {
     .delete(linkedinOauthStates)
     .where(lt(linkedinOauthStates.expires_at, new Date()));
 }
+
+// ============================================================================
+// Dashboard Queries
+// ============================================================================
+
+/**
+ * Get dashboard stats for a user.
+ * @param userId - The user ID
+ */
+export async function getDashboardStats(userId: string) {
+  const allPosts = await db
+    .select()
+    .from(posts)
+    .where(eq(posts.user_id, userId));
+
+  const totalPosts = allPosts.length;
+  const drafts = allPosts.filter((p) => p.status === "draft").length;
+  const scheduled = allPosts.filter((p) => p.status === "scheduled").length;
+  const published = allPosts.filter((p) => p.status === "published").length;
+  const failed = allPosts.filter((p) => p.status === "failed").length;
+
+  return {
+    totalPosts,
+    drafts,
+    scheduled,
+    published,
+    failed,
+  };
+}
+
+/**
+ * Get publishing success rate for a user.
+ * @param userId - The user ID
+ */
+export async function getPublishingSuccessRate(userId: string): Promise<number> {
+  const stats = await getDashboardStats(userId);
+  const total = stats.published + stats.failed;
+  if (total === 0) return 0;
+  return Math.round((stats.published / total) * 100);
+}
+
+/**
+ * Get posts created over time for a user.
+ * @param userId - The user ID
+ * @param days - Number of days to look back (default: 30)
+ */
+export async function getPostsOverTime(userId: string, days: number = 30) {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+
+  const postsData = await db
+    .select({
+      date: sql<string>`DATE(${posts.created_at})`,
+      count: sql<number>`COUNT(*)`,
+    })
+    .from(posts)
+    .where(and(eq(posts.user_id, userId), gte(posts.created_at, startDate)))
+    .groupBy(sql`DATE(${posts.created_at})`)
+    .orderBy(sql`DATE(${posts.created_at})`);
+
+  return postsData;
+}
+
+/**
+ * Get recent posts for a user.
+ * @param userId - The user ID
+ * @param limit - Maximum number of posts to return (default: 5)
+ */
+export async function getRecentPosts(userId: string, limit: number = 5) {
+  return db
+    .select()
+    .from(posts)
+    .where(eq(posts.user_id, userId))
+    .orderBy(desc(posts.created_at))
+    .limit(limit);
+}
+
+/**
+ * Get total post count for a user (used as generation count).
+ * @param userId - The user ID
+ */
+export async function getGenerationCount(userId: string): Promise<number> {
+  const result = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(posts)
+    .where(eq(posts.user_id, userId));
+
+  return result[0]?.count ?? 0;
+}
