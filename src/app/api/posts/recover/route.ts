@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { getPostById, updatePost } from "@/lib/db/queries";
 import { mapDbPostToFrontend, mapDbPostsToFrontend } from "@/lib/db/mappers";
@@ -18,7 +19,17 @@ const recoverPostSchema = z.object({
  * List all posts stuck in "publishing" status for more than 1 hour.
  * Returns { posts: Post[], count: number } in frontend camelCase format.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const session = await auth();
+  
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
+  const userId = session.user.id;
   const requestId = crypto.randomUUID();
 
   try {
@@ -29,6 +40,7 @@ export async function GET() {
       .from(posts)
       .where(
         and(
+          eq(posts.user_id, userId),
           eq(posts.status, "publishing"),
           lt(posts.updated_at, oneHourAgo)
         )
@@ -38,6 +50,7 @@ export async function GET() {
 
     log("info", "Stuck posts queried", {
       requestId,
+      userId,
       count: frontendPosts.length,
     });
 
@@ -48,6 +61,7 @@ export async function GET() {
   } catch (error) {
     log("error", "Failed to query stuck posts", {
       requestId,
+      userId,
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
@@ -67,6 +81,16 @@ export async function GET() {
  * - "fail": sets post to "failed" with error message
  */
 export async function POST(request: NextRequest) {
+  const session = await auth();
+  
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
+  const userId = session.user.id;
   const requestId = crypto.randomUUID();
 
   let body: unknown;
@@ -91,11 +115,12 @@ export async function POST(request: NextRequest) {
   const { postId, action } = result.data;
 
   try {
-    // Check if post exists
-    const existingPost = await getPostById(postId);
+    // Check if post exists for this user
+    const existingPost = await getPostById(postId, userId);
     if (!existingPost) {
       log("warn", "Recovery attempted on non-existent post", {
         requestId,
+        userId,
         postId,
       });
       return NextResponse.json(
@@ -108,6 +133,7 @@ export async function POST(request: NextRequest) {
     if (existingPost.status !== "publishing") {
       log("warn", "Recovery attempted on non-stuck post", {
         requestId,
+        userId,
         postId,
         currentStatus: existingPost.status,
       });
@@ -126,7 +152,7 @@ export async function POST(request: NextRequest) {
       dbPost = await updatePost(postId, {
         status: "scheduled",
         scheduled_at: scheduledAt,
-      });
+      }, userId);
 
       // Register with scheduler so the post actually gets picked up
       try {
@@ -134,6 +160,7 @@ export async function POST(request: NextRequest) {
       } catch (schedulerError) {
         log("error", "Scheduler registration failed during recovery, reverting to publishing", {
           requestId,
+          userId,
           postId,
           error:
             schedulerError instanceof Error
@@ -144,7 +171,7 @@ export async function POST(request: NextRequest) {
         // Revert back to publishing status since scheduler didn't accept it
         await updatePost(postId, {
           status: "publishing",
-        });
+        }, userId);
 
         return NextResponse.json(
           { error: "Scheduler service is unavailable. Recovery failed." },
@@ -155,7 +182,7 @@ export async function POST(request: NextRequest) {
       dbPost = await updatePost(postId, {
         status: "failed",
         error_message: "Manual recovery: publishing timed out",
-      });
+      }, userId);
     }
 
     if (!dbPost) {
@@ -166,6 +193,7 @@ export async function POST(request: NextRequest) {
 
     log("info", "Post recovered", {
       requestId,
+      userId,
       postId,
       action,
       previousStatus: "publishing",
@@ -176,6 +204,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     log("error", "Failed to recover post", {
       requestId,
+      userId,
       postId,
       action,
       error: error instanceof Error ? error.message : String(error),
