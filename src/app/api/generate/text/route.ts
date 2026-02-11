@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 import { generateTextSchema } from "@/lib/validations/generation";
 import { generateTextVariations } from "@/lib/api/anthropic";
 import { log } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
   const requestId = crypto.randomUUID();
 
   try {

@@ -4,11 +4,12 @@ import { format } from "date-fns";
 
 const colorRotation = ["orange", "slate", "purple", "blue"] as const;
 
-// TODO: Replace with actual auth user in Phase 2
-const MOCK_USER_ID = "mock-user-001";
+interface PlannerWidgetProps {
+  userId: string;
+}
 
-export async function PlannerWidget() {
-  const posts = await getUpcomingPosts(MOCK_USER_ID, 4);
+export async function PlannerWidget({ userId }: PlannerWidgetProps) {
+  const posts = await getUpcomingPosts(userId, 4);
 
   // Generate next 4 days starting from today
   const today = new Date();

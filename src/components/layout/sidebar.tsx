@@ -20,7 +20,15 @@ const navItems: NavItem[] = [
   { href: "/settings", icon: "settings", label: "Settings", disabled: true },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  user?: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
+}
+
+export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -86,7 +94,7 @@ export function Sidebar() {
 
       {/* User Card */}
       <div className="px-4 pb-4">
-        <UserCard />
+        <UserCard name={user?.name} email={user?.email} image={user?.image} />
       </div>
 
       {/* Bottom CTA */}
