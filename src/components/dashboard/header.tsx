@@ -1,3 +1,6 @@
+import { auth } from "@/lib/auth";
+import { getUserSettings } from "@/lib/db/queries";
+
 function getGreeting(): string {
   const hour = new Date().getHours();
 
@@ -10,7 +13,9 @@ function getGreeting(): string {
   }
 }
 
-export function Header() {
+export async function Header() {
+  const session = await auth();
+  const settings = session?.user?.id ? await getUserSettings(session.user.id) : null;
   const greeting = getGreeting();
 
   return (
@@ -23,10 +28,27 @@ export function Header() {
           Your Aurora UI dashboard is ready for some fresh content.
         </p>
       </div>
-      <button data-testid="dashboard-btn-view-profile" className="flex items-center gap-2 px-6 py-3 glass-card rounded-xl font-bold text-sm hover:bg-white/80 transition-colors">
-        <span className="material-symbols-outlined">visibility</span>
-        View Public Profile
-      </button>
+      {settings?.linkedin_profile_url ? (
+        <a
+          href={settings.linkedin_profile_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="dashboard-link-view-profile"
+          className="flex items-center gap-2 px-6 py-3 glass-card rounded-xl font-bold text-sm hover:bg-white/80 transition-colors"
+        >
+          <span className="material-symbols-outlined">visibility</span>
+          View Public Profile
+        </a>
+      ) : (
+        <button
+          disabled
+          className="flex items-center gap-2 px-6 py-3 glass-card rounded-xl font-bold text-sm opacity-50 cursor-not-allowed"
+          title="Add your LinkedIn profile in Settings to enable this button"
+        >
+          <span className="material-symbols-outlined">visibility</span>
+          View Public Profile
+        </button>
+      )}
     </header>
   );
 }

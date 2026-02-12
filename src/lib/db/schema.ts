@@ -136,6 +136,7 @@ export const userSettings = sqliteTable("user_settings", {
 
   // LinkedIn profile metadata
   linkedin_profile_url: text("linkedin_profile_url"),
+  linkedin_headline: text("linkedin_headline"),
   linkedin_person_urn: text("linkedin_person_urn"),
 
   // LinkedIn OAuth tokens (encrypted at application layer)
@@ -146,6 +147,8 @@ export const userSettings = sqliteTable("user_settings", {
   linkedin_oauth_status: text("linkedin_oauth_status", {
     enum: ["connected", "disconnected", "expired"],
   }),
+
+  voice_tones_json: text("voice_tones_json"), // JSON array of 6 VoiceTone objects, null = defaults
 
   created_at: integer("created_at", { mode: "timestamp" })
     .notNull()

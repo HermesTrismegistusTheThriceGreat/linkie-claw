@@ -1,21 +1,29 @@
 import type { DashboardStats, StatCard, FollowerDataPoint } from "@/types/stats";
 
+import {
+  getDashboardStats as getDbDashboardStats,
+  getPublishingSuccessRate,
+  getPostsOverTime,
+  getGenerationCount,
+} from "@/lib/db/queries";
+import { getAuthUserId } from "@/lib/auth-utils";
+
 export async function getDashboardStats(): Promise<DashboardStats> {
-  const response = await fetch("/api/dashboard", {
-    cache: "no-store",
-  });
+  const userId = await getAuthUserId();
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch dashboard stats");
-  }
-
-  const data = await response.json();
+  const [dbStats, successRate, postsOverTime, generationCount] =
+    await Promise.all([
+      getDbDashboardStats(userId),
+      getPublishingSuccessRate(userId),
+      getPostsOverTime(userId, 30),
+      getGenerationCount(userId),
+    ]);
 
   // Transform database data into dashboard format
   const cards: StatCard[] = [
     {
       label: "Total Posts",
-      value: data.stats.totalPosts.toString(),
+      value: dbStats.totalPosts.toString(),
       change: 0, // Can calculate week-over-week change if needed
       changeLabel: "",
       icon: "article",
@@ -23,7 +31,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     },
     {
       label: "Success Rate",
-      value: `${data.successRate}%`,
+      value: `${successRate}%`,
       change: 0,
       changeLabel: "",
       icon: "bolt",
@@ -31,7 +39,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     },
     {
       label: "Published",
-      value: data.stats.published.toString(),
+      value: dbStats.published.toString(),
       change: 0,
       changeLabel: "",
       icon: "check_circle",
@@ -40,7 +48,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   ];
 
   // Transform posts over time into chart data
-  const followerGrowth: FollowerDataPoint[] = data.postsOverTime.map((point: { date: string; count: number }) => ({
+  const followerGrowth: FollowerDataPoint[] = postsOverTime.map((point: { date: string; count: number }) => ({
     date: point.date,
     count: point.count,
   }));
@@ -48,7 +56,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   return {
     cards,
     followerGrowth,
-    totalFollowers: data.generationCount, // Use generation count as total posts count
+    totalFollowers: generationCount, // Use generation count as total posts count
   };
 }
 

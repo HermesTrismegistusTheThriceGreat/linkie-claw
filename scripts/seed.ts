@@ -11,8 +11,8 @@ async function seed() {
     .insert(users)
     .values({
       id: createId(),
-      name: "Alex Rivera",
-      email: "alex@example.com",
+      name: "Joseph Seager",
+      email: "seagerjoe@gmail.com",
       emailVerified: new Date(),
       image: null,
     })
@@ -119,7 +119,7 @@ async function seed() {
   await db.insert(userSettings).values({
     id: createId(),
     user_id: userId,
-    linkedin_profile_url: "https://linkedin.com/in/alexrivera",
+    linkedin_profile_url: "https://www.linkedin.com/in/joseph-seager/",
     linkedin_person_urn: "urn:li:person:abc123",
     linkedin_connected: 1,
     linkedin_oauth_status: "connected",
@@ -129,7 +129,7 @@ async function seed() {
   console.log("✅ Created user settings");
 
   console.log("\n🎉 Database seeded successfully!");
-  console.log("Test user email: alex@example.com");
+  console.log("Test user email: seagerjoe@gmail.com");
   process.exit(0);
 }
 

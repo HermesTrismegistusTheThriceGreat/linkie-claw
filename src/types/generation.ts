@@ -1,10 +1,4 @@
-export type VariationStyle =
-  | "Storytelling"
-  | "Professional"
-  | "Short & Punchy"
-  | "Data-Driven"
-  | "Conversational"
-  | "Provocative";
+export type VariationStyle = string;
 
 export interface TextVariation {
   id: string;

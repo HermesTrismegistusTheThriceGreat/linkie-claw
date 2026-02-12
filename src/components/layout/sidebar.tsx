@@ -15,8 +15,9 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: "/", icon: "dashboard", label: "Dashboard" },
   { href: "/calendar", icon: "calendar_month", label: "Content Calendar" },
-  { href: "/analytics", icon: "insights", label: "Analytics", disabled: true },
+  { href: "/analytics", icon: "insights", label: "Analytics" },
   { href: "/create", icon: "auto_fix", label: "AI Writer" },
+  { href: "/voice-tones", icon: "record_voice_over", label: "Voice & Tones" },
   { href: "/settings", icon: "settings", label: "Settings" },
 ];
 

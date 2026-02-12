@@ -16,6 +16,7 @@ export default async function SettingsPage() {
 
   const linkedinConnected = settings?.linkedin_connected === 1;
   const linkedinProfileUrl = settings?.linkedin_profile_url ?? null;
+  const linkedinHeadline = settings?.linkedin_headline ?? null;
 
   return (
     <AuroraBackground className="min-h-screen">
@@ -24,15 +25,16 @@ export default async function SettingsPage() {
         <main className="flex-1 overflow-y-auto z-10">
           <div className="max-w-4xl mx-auto p-10 space-y-8">
             <SettingsHeader />
-            
+
             <div className="grid grid-cols-1 gap-6">
-              <LinkedInProfileSection 
+              <LinkedInProfileSection
                 initialUrl={linkedinProfileUrl}
+                initialHeadline={linkedinHeadline}
                 onSave={updateLinkedInUrl}
               />
-              
+
               <LinkedInStatusSection isConnected={linkedinConnected} />
-              
+
               <AccountSection user={user} />
             </div>
           </div>

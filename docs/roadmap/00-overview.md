@@ -55,6 +55,7 @@
 - Phase 9: [09-analytics-page.md](./09-analytics-page.md)
 - Phase 10: [10-final-polish.md](./10-final-polish.md)
 - Phase 11: [11-production-deployment.md](./11-production-deployment.md)
+- Phase 12: [12-voice-and-tones.md](./12-voice-and-tones.md)
 
 ---
 

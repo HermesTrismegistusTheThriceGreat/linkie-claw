@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { posts, generations, userSettings, linkedinOauthStates } from "@/lib/db/schema";
 import type { NewPost, NewGeneration, NewUserSettings, UserSettings } from "@/lib/db/schema";
+import { DEFAULT_VOICE_TONES, type VoiceTone } from "@/lib/voice-tones";
 import { eq, and, gte, lt, desc, sql } from "drizzle-orm";
 import { startOfMonth, endOfMonth, parseISO, subMinutes } from "date-fns";
 
@@ -374,6 +375,33 @@ export async function upsertUserSettings(
   return result[0]!;
 }
 
+/**
+ * Get user voice tones (or defaults if not set).
+ * @param userId - The user ID
+ */
+export async function getUserVoiceTones(userId: string): Promise<VoiceTone[]> {
+  const settings = await getUserSettings(userId);
+  if (!settings?.voice_tones_json) {
+    return DEFAULT_VOICE_TONES;
+  }
+  try {
+    return JSON.parse(settings.voice_tones_json) as VoiceTone[];
+  } catch {
+    return DEFAULT_VOICE_TONES;
+  }
+}
+
+/**
+ * Save user voice tones.
+ * @param userId - The user ID
+ * @param tones - The voice tones to save
+ */
+export async function saveUserVoiceTones(userId: string, tones: VoiceTone[]): Promise<void> {
+  await upsertUserSettings(userId, {
+    voice_tones_json: JSON.stringify(tones),
+  });
+}
+
 // ============================================================================
 // LinkedIn OAuth State Queries
 // ============================================================================
@@ -524,4 +552,142 @@ export async function getGenerationCount(userId: string): Promise<number> {
     .where(eq(posts.user_id, userId));
 
   return result[0]?.count ?? 0;
+}
+
+// ============================================================================
+// Analytics Queries
+// ============================================================================
+
+/**
+ * Get posts grouped by status and date for a user.
+ * @param userId - The user ID
+ * @param days - Number of days to look back (default: 30)
+ */
+export async function getPostsByStatus(userId: string, days: number = 30) {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+
+  const postsData = await db
+    .select({
+      date: sql<string>`DATE(${posts.created_at})`,
+      status: posts.status,
+      count: sql<number>`COUNT(*)`,
+    })
+    .from(posts)
+    .where(and(eq(posts.user_id, userId), gte(posts.created_at, startDate)))
+    .groupBy(sql`DATE(${posts.created_at})`, posts.status)
+    .orderBy(sql`DATE(${posts.created_at})`);
+
+  return postsData;
+}
+
+/**
+ * Get publishing trend (published posts over time) for a user.
+ * @param userId - The user ID
+ * @param days - Number of days to look back (default: 30)
+ */
+export async function getPublishingTrend(userId: string, days: number = 30) {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+
+  const trendData = await db
+    .select({
+      date: sql<string>`DATE(${posts.published_at})`,
+      count: sql<number>`COUNT(*)`,
+    })
+    .from(posts)
+    .where(
+      and(
+        eq(posts.user_id, userId),
+        eq(posts.status, "published"),
+        gte(posts.published_at, startDate)
+      )
+    )
+    .groupBy(sql`DATE(${posts.published_at})`)
+    .orderBy(sql`DATE(${posts.published_at})`);
+
+  return trendData;
+}
+
+/**
+ * Get top published posts for a user.
+ * @param userId - The user ID
+ * @param limit - Maximum number of posts to return (default: 10)
+ */
+export async function getTopPosts(userId: string, limit: number = 10) {
+  return db
+    .select({
+      id: posts.id,
+      title: posts.title,
+      content: posts.content,
+      published_at: posts.published_at,
+      linkedin_post_urn: posts.linkedin_post_urn,
+    })
+    .from(posts)
+    .where(and(eq(posts.user_id, userId), eq(posts.status, "published")))
+    .orderBy(desc(posts.published_at))
+    .limit(limit);
+}
+
+/**
+ * Get content generation stats for a user.
+ * @param userId - The user ID
+ * @param days - Number of days to look back (default: 30)
+ */
+export async function getContentGenerationStats(userId: string, days: number = 30) {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+
+  const totalGenerations = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(generations)
+    .where(and(eq(generations.user_id, userId), gte(generations.created_at, startDate)));
+
+  const postsByStatus = await db
+    .select({
+      status: posts.status,
+      count: sql<number>`COUNT(*)`,
+    })
+    .from(posts)
+    .where(and(eq(posts.user_id, userId), gte(posts.created_at, startDate)))
+    .groupBy(posts.status);
+
+  return {
+    totalGenerations: totalGenerations[0]?.count ?? 0,
+    postsByStatus,
+  };
+}
+
+/**
+ * Get scheduling patterns (preferred posting days/times) for a user.
+ * @param userId - The user ID
+ * @param days - Number of days to look back (default: 30)
+ */
+export async function getSchedulingPatterns(userId: string, days: number = 30) {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+
+  const dayOfWeekData = await db
+    .select({
+      dayOfWeek: sql<number>`CAST(strftime('%w', ${posts.scheduled_at}) AS INTEGER)`,
+      count: sql<number>`COUNT(*)`,
+    })
+    .from(posts)
+    .where(
+      and(
+        eq(posts.user_id, userId),
+        gte(posts.scheduled_at, startDate),
+        sql`${posts.scheduled_at} IS NOT NULL`
+      )
+    )
+    .groupBy(sql`strftime('%w', ${posts.scheduled_at})`)
+    .orderBy(sql`CAST(strftime('%w', ${posts.scheduled_at}) AS INTEGER)`);
+
+  // Map day numbers to names (0 = Sunday, 6 = Saturday)
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  return dayOfWeekData.map((d) => ({
+    day: dayNames[d.dayOfWeek],
+    count: d.count,
+  }));
 }

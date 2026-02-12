@@ -30,12 +30,29 @@ The scheduler's job is simple: at a scheduled time, POST to an n8n webhook with 
 Cron trigger (every 60 seconds)
   → GET /api/cron/publish-scheduled (protected by CRON_SECRET)
     → Query: posts WHERE status='scheduled' AND scheduled_at <= now
-    → For each post:
+    → Process posts in parallel (with concurrency limit):
       → Update status to 'publishing'
       → POST to n8n webhook with {postId, accessToken, personUrn, content, imageUrl}
       → On success: POST callback will mark as 'published'
-      → On failure: increment retry_count, reschedule for +2 min
+      → On failure: increment retry_count, reschedule with exponential backoff
+        - Retry 1: +2 minutes
+        - Retry 2: +4 minutes
+        - Retry 3: +8 minutes
       → On max retries (3): mark as 'failed' with error message
+```
+
+### Post Status State Machine
+
+No posts can fall through the cracks — every status transition is deterministic:
+
+```
+draft → scheduled (user schedules)
+scheduled → publishing (cron picks up)
+publishing → published (n8n callback success)
+publishing → scheduled (retry: cron stale recovery or n8n failure with retries remaining)
+publishing → failed (n8n callback failure OR max retries exceeded)
+scheduled → draft (user unschedules)
+failed → scheduled (manual retry via recover endpoint)
 ```
 
 ---
@@ -61,7 +78,8 @@ import { getUserSettings } from "@/lib/db/queries/settings";
 import { log } from "@/lib/logger";
 
 const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 2 * 60 * 1000; // 2 minutes
+const RETRY_DELAY_MS = 2 * 60 * 1000; // 2 minutes (base delay for exponential backoff)
+const MAX_BATCH_SIZE = 10; // Process up to 10 posts per cycle
 
 export async function GET(request: NextRequest) {
   // Verify CRON_SECRET
@@ -73,101 +91,114 @@ export async function GET(request: NextRequest) {
   log("info", "Cron job triggered: publish-scheduled");
 
   const postsToPublish = await getPostsReadyToPublish();
-  let processed = 0;
-  let failed = 0;
+  const batch = postsToPublish.slice(0, MAX_BATCH_SIZE);
 
-  for (const post of postsToPublish) {
-    try {
-      // Update status to 'publishing'
-      await updatePost(post.id, { status: "publishing" });
+  // Process posts in parallel with Promise.allSettled
+  const results = await Promise.allSettled(
+    batch.map(async (post) => {
+      try {
+        // Update status to 'publishing'
+        await updatePost(post.id, { status: "publishing" });
 
-      // Get user's LinkedIn credentials
-      const settings = await getUserSettings(post.user_id);
-      if (!settings || !settings.linkedin_connected) {
-        throw new Error("User LinkedIn not connected");
+        // Get user's LinkedIn credentials
+        const settings = await getUserSettings(post.user_id);
+        if (!settings || !settings.linkedin_connected) {
+          throw new Error("User LinkedIn not connected");
+        }
+
+        // POST to n8n webhook
+        const n8nResponse = await fetch(process.env.N8N_WEBHOOK_URL!, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            postId: post.id,
+            userId: post.user_id,
+            personUrn: settings.linkedin_person_urn,
+            content: post.content,
+            imageUrl: post.image_url,
+          }),
+        });
+
+        if (!n8nResponse.ok) {
+          throw new Error(`n8n webhook failed: ${n8nResponse.status}`);
+        }
+
+        log("info", "Post dispatched to n8n", { postId: post.id });
+        return { postId: post.id, success: true };
+      } catch (error) {
+        log("error", "Failed to publish post", { postId: post.id, error });
+
+        // Handle retry logic with exponential backoff
+        const newRetryCount = (post.retry_count || 0) + 1;
+
+        if (newRetryCount >= MAX_RETRIES) {
+          // Max retries reached, mark as failed
+          await updatePost(post.id, {
+            status: "failed",
+            error_message: error instanceof Error ? error.message : "Unknown error",
+          });
+          log("error", "Post marked as failed after max retries", {
+            postId: post.id,
+          });
+        } else {
+          // Exponential backoff: 2min, 4min, 8min
+          const delayMs = RETRY_DELAY_MS * Math.pow(2, post.retry_count || 0);
+          const newScheduledAt = new Date(Date.now() + delayMs);
+          await updatePost(post.id, {
+            status: "scheduled",
+            retry_count: newRetryCount,
+            scheduled_at: newScheduledAt,
+          });
+          log("info", "Post rescheduled for retry", {
+            postId: post.id,
+            retryCount: newRetryCount,
+            delayMinutes: delayMs / 60000,
+            newScheduledAt,
+          });
+        }
+
+        return { postId: post.id, success: false };
       }
+    })
+  );
 
-      // POST to n8n webhook
-      const n8nResponse = await fetch(process.env.N8N_WEBHOOK_URL!, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          postId: post.id,
-          userId: post.user_id,
-          personUrn: settings.linkedin_person_urn,
-          content: post.content,
-          imageUrl: post.image_url,
-        }),
-      });
-
-      if (!n8nResponse.ok) {
-        throw new Error(`n8n webhook failed: ${n8nResponse.status}`);
-      }
-
-      log("info", "Post dispatched to n8n", { postId: post.id });
-      processed++;
-    } catch (error) {
-      log("error", "Failed to publish post", { postId: post.id, error });
-
-      // Handle retry logic
-      const newRetryCount = (post.retry_count || 0) + 1;
-
-      if (newRetryCount >= MAX_RETRIES) {
-        // Max retries reached, mark as failed
-        await updatePost(post.id, {
-          status: "failed",
-          error_message: error instanceof Error ? error.message : "Unknown error",
-        });
-        log("error", "Post marked as failed after max retries", {
-          postId: post.id,
-        });
-      } else {
-        // Increment retry count and reschedule
-        const newScheduledAt = new Date(Date.now() + RETRY_DELAY_MS);
-        await updatePost(post.id, {
-          status: "scheduled",
-          retry_count: newRetryCount,
-          scheduled_at: newScheduledAt,
-        });
-        log("info", "Post rescheduled for retry", {
-          postId: post.id,
-          retryCount: newRetryCount,
-          newScheduledAt,
-        });
-      }
-
-      failed++;
-    }
-  }
+  const processed = results.filter((r) => r.status === "fulfilled" && r.value.success).length;
+  const failed = results.filter((r) => r.status === "fulfilled" && !r.value.success).length;
 
   return NextResponse.json({
     processed,
     failed,
-    total: postsToPublish.length,
+    total: batch.length,
   });
 }
 ```
+
+**Note on concurrency:** Initial volume is very low (1-3 posts per user per day, not back-to-back), so parallel processing with a batch size of 10 is a forward-looking improvement. This approach prevents timeout issues on serverless platforms (deployment platform TBD — Vercel Hobby: 10s timeout, Vercel Pro: 60s timeout) and follows best practices even on traditional servers.
 
 ---
 
 ### 7.3 — Create Catch-up Logic for Stale 'Publishing' Posts
 
-Add a query to find posts stuck in 'publishing' state for more than 10 minutes (from a crashed previous run):
+Add a query to find posts stuck in 'publishing' state for more than 5 minutes (from a crashed previous run):
 
 #### 7.3.1 — Update `src/lib/db/queries.ts`
 
 ```typescript
 /**
- * Get posts stuck in 'publishing' state for more than 10 minutes.
+ * Get posts stuck in 'publishing' state for more than 5 minutes.
  * These are posts that failed to complete due to a crashed scheduler run.
+ *
+ * Note: The manual recovery UI endpoint (/api/posts/recover) uses a separate
+ * 1-hour threshold for user-facing recovery, which is intentionally different
+ * to avoid showing users posts that are actively being processed.
  */
 export async function getStalePublishingPosts() {
-  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
   return db
     .select()
     .from(posts)
     .where(
-      and(eq(posts.status, "publishing"), lt(posts.updated_at, tenMinutesAgo))
+      and(eq(posts.status, "publishing"), lt(posts.updated_at, fiveMinutesAgo))
     )
     .orderBy(posts.scheduled_at);
 }
@@ -233,11 +264,23 @@ In `package.json`:
 }
 ```
 
+**Note on deployment flexibility:** The dev scheduler script works universally across all deployment platforms. This is useful for:
+- **Local development** (covered here)
+- **Self-hosted deployments** (run as a background service instead of relying on OS-level cron)
+- **Railway/Render/other platforms** (run as a background worker if the platform doesn't have built-in cron support)
+- See section 7.9 for platform-specific cron configuration options
+
 ---
 
 ### 7.5 — Update Schedule/Unschedule API Routes
 
 Remove calls to the Python scheduler HTTP client. Scheduling now just means setting `status='scheduled'` and `scheduled_at` in the database — the cron route picks it up.
+
+**Changes required:**
+- Remove the `scheduleWithScheduler()` call from the existing `src/app/api/posts/[id]/schedule/route.ts`
+- Remove the `scheduleWithScheduler()` call from the existing `src/app/api/posts/[id]/recover/route.ts`
+- Delete `src/lib/api/scheduler.ts` entirely (Python scheduler HTTP client)
+- Update the recover route to no longer need the scheduler — recovery just resets status to 'scheduled' and the cron picks it up
 
 #### 7.5.1 — Update `src/app/api/posts/[id]/schedule/route.ts`
 
@@ -379,7 +422,11 @@ export async function POST(request: NextRequest) {
 
 ---
 
-### 7.9 — Configure Vercel Cron Job
+### 7.9 — Configure Cron Job (Deployment-Agnostic)
+
+The deployment platform is TBD. Here are the options for different platforms:
+
+#### Option 1: Vercel Cron Jobs
 
 Create `vercel.json` in the project root:
 
@@ -398,12 +445,37 @@ This configures Vercel to call the endpoint every minute (cron syntax: `* * * * 
 
 > **Note:** Vercel Cron is only available on Pro plans. For Hobby tier, use the dev scheduler script or a third-party cron service like cron-job.org to call the endpoint.
 
+#### Option 2: Self-Hosted (Traditional Server)
+
+Use the dev scheduler script as a background service:
+
+```bash
+# Run as a systemd service or PM2 process
+npm run scheduler:dev
+```
+
+Or use OS-level cron:
+
+```cron
+* * * * * curl -H "Authorization: Bearer $CRON_SECRET" https://your-domain.com/api/cron/publish-scheduled
+```
+
+#### Option 3: Railway / Render / Other Platforms
+
+Check if your platform has built-in cron support:
+- **Railway:** Use Railway Cron Jobs (if available) or run the dev scheduler as a background worker
+- **Render:** Use Render Cron Jobs or run the dev scheduler as a background worker
+- **Generic:** The dev scheduler script (`npm run scheduler:dev`) works universally as a long-running background process
+
+The dev scheduler script (section 7.4) is the universal fallback that works on any platform.
+
 ---
 
 ## What Gets Eliminated
 
 - `scheduler/` directory (Python, FastAPI, APScheduler, Dockerfile)
-- `src/lib/api/scheduler.ts` (HTTP client to Python scheduler)
+- `src/lib/api/scheduler.ts` (Python scheduler HTTP client — deleted entirely)
+- `scheduleWithScheduler()` calls from schedule/recover routes
 - Separate PostgreSQL instance for APScheduler job store
 - Docker requirement for scheduler
 - Thread pool / resource leak crashes
@@ -417,13 +489,16 @@ This configures Vercel to call the endpoint every minute (cron syntax: `* * * * 
 - [ ] Schedule a post 2 minutes out → it publishes at the correct time
 - [ ] Schedule a post, then unschedule → it does NOT publish
 - [ ] Cron endpoint rejects requests without valid CRON_SECRET
-- [ ] Failed n8n call → post retries after 2 minutes
+- [ ] Failed n8n call → post retries with exponential backoff (2min, 4min, 8min)
 - [ ] 3 failures → post marked as 'failed' with error message
-- [ ] Stuck 'publishing' posts recovered after 10 minutes
+- [ ] Stuck 'publishing' posts recovered after 5 minutes
 - [ ] `npm run typecheck` passes with no errors
 - [ ] Python scheduler directory can be safely removed
+- [ ] `src/lib/api/scheduler.ts` removed entirely
+- [ ] Schedule/unschedule routes no longer call Python scheduler
 - [ ] Dev scheduler script works locally (`npm run scheduler:dev`)
 - [ ] Multiple users can schedule posts independently
 - [ ] Retry count resets to 0 on successful publish
 - [ ] Posts with different scheduled times are dispatched correctly
+- [ ] Parallel processing handles multiple posts correctly
 - [ ] No crashes after running for 24+ hours

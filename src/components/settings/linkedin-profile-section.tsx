@@ -6,20 +6,22 @@ import { Input } from "@/components/ui/input";
 
 interface LinkedInProfileSectionProps {
   initialUrl: string | null;
-  onSave: (url: string) => Promise<void>;
+  initialHeadline: string | null;
+  onSave: (url: string, headline: string) => Promise<void>;
 }
 
-export function LinkedInProfileSection({ initialUrl, onSave }: LinkedInProfileSectionProps) {
+export function LinkedInProfileSection({ initialUrl, initialHeadline, onSave }: LinkedInProfileSectionProps) {
   const [url, setUrl] = useState(initialUrl || "");
+  const [headline, setHeadline] = useState(initialHeadline || "");
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
 
   const handleSave = async () => {
     setIsSaving(true);
     setSaveStatus("idle");
-    
+
     try {
-      await onSave(url);
+      await onSave(url, headline);
       setSaveStatus("success");
       // Clear success message after 3 seconds
       setTimeout(() => setSaveStatus("idle"), 3000);
@@ -31,7 +33,7 @@ export function LinkedInProfileSection({ initialUrl, onSave }: LinkedInProfileSe
   };
 
   return (
-    <section 
+    <section
       className="glass-card rounded-2xl p-6 space-y-4"
       data-testid="settings-linkedin-profile-section"
     >
@@ -64,6 +66,25 @@ export function LinkedInProfileSection({ initialUrl, onSave }: LinkedInProfileSe
         </p>
       </div>
 
+      <div className="space-y-2">
+        <label htmlFor="linkedin-headline" className="text-sm font-medium text-slate-700 block">
+          LinkedIn Headline
+        </label>
+        <Input
+          id="linkedin-headline"
+          data-testid="settings-input-linkedin-headline"
+          type="text"
+          placeholder="Founder @ Aurora AI | Crafting the future of SaaS"
+          value={headline}
+          onChange={(e) => setHeadline(e.target.value)}
+          className="bg-white/50 border-slate-200"
+          aria-label="LinkedIn Headline"
+        />
+        <p className="text-xs text-slate-500">
+          Your professional headline or tagline as it appears on LinkedIn
+        </p>
+      </div>
+
       <div className="flex items-center gap-4">
         <Button
           data-testid="settings-btn-save-linkedin"
@@ -86,7 +107,7 @@ export function LinkedInProfileSection({ initialUrl, onSave }: LinkedInProfileSe
         </Button>
 
         {saveStatus === "success" && (
-          <span 
+          <span
             data-testid="settings-linkedin-save-success"
             className="text-sm text-green-600 flex items-center gap-1"
             aria-live="polite"
@@ -97,7 +118,7 @@ export function LinkedInProfileSection({ initialUrl, onSave }: LinkedInProfileSe
         )}
 
         {saveStatus === "error" && (
-          <span 
+          <span
             data-testid="settings-linkedin-save-error"
             className="text-sm text-red-600 flex items-center gap-1"
             aria-live="polite"
