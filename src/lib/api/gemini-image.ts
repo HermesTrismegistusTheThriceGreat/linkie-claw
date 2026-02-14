@@ -1,6 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
 import { createId } from "@paralleldrive/cuid2";
-import { saveImageFromBase64 } from "@/lib/storage/images";
 import { log } from "@/lib/logger";
 import type { ImageProvider } from "./image-provider";
 import type { GeneratedImage } from "@/types/generation";
@@ -39,11 +38,9 @@ export class GeminiImageProvider implements ImageProvider {
         for (const part of candidates[0].content.parts) {
           if (part.inlineData) {
             const id = `img-${createId()}`;
-            const url = await saveImageFromBase64(
-              part.inlineData.data ?? "",
-              id
-            );
-            return { id, url, prompt } as GeneratedImage;
+            const rawBase64 = part.inlineData.data ?? "";
+            const dataUri = `data:image/png;base64,${rawBase64}`;
+            return { id, url: dataUri, base64: rawBase64, prompt } as GeneratedImage;
           }
         }
 
@@ -75,6 +72,71 @@ export class GeminiImageProvider implements ImageProvider {
       return images;
     } catch (error) {
       log("error", "Gemini Image API error", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        duration: Date.now() - startTime,
+      });
+      throw error;
+    }
+  }
+  async generateImagesWithStyles(
+    prompts: string[]
+  ): Promise<GeneratedImage[]> {
+    const startTime = Date.now();
+    log("info", `Generating ${prompts.length} images with Gemini Flash Image (styled)`, {
+      promptCount: prompts.length,
+    });
+
+    try {
+      // Gemini generates ONE image per call — fire N calls in parallel
+      const imagePromises = prompts.map(async (prompt, i) => {
+        const response = await ai.models.generateContent({
+          model: "gemini-2.5-flash-image",
+          contents: prompt,
+        });
+
+        const candidates = response.candidates;
+        if (!candidates?.[0]?.content?.parts) {
+          throw new Error(`No candidates in Gemini response (image ${i})`);
+        }
+
+        for (const part of candidates[0].content.parts) {
+          if (part.inlineData) {
+            const id = `img-${createId()}`;
+            const rawBase64 = part.inlineData.data ?? "";
+            const dataUri = `data:image/png;base64,${rawBase64}`;
+            return { id, url: dataUri, base64: rawBase64, prompt } as GeneratedImage;
+          }
+        }
+
+        throw new Error(`No image data in Gemini response (image ${i})`);
+      });
+
+      // Use allSettled so partial failures don't lose all images
+      const results = await Promise.allSettled(imagePromises);
+      const images = results
+        .filter(
+          (r): r is PromiseFulfilledResult<GeneratedImage> =>
+            r.status === "fulfilled"
+        )
+        .map((r) => r.value);
+
+      const failures = results.filter((r) => r.status === "rejected").length;
+
+      if (images.length === 0) {
+        throw new Error("All image generations failed");
+      }
+
+      const duration = Date.now() - startTime;
+      log("info", "Styled images generated via Gemini", {
+        count: images.length,
+        failures,
+        duration,
+      });
+
+      return images;
+    } catch (error) {
+      log("error", "Gemini Image API error (styled)", {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         duration: Date.now() - startTime,

@@ -8,21 +8,6 @@ export default function LoginPage() {
   const [debug, setDebug] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    console.log("[Login] Page loaded");
-    setDebug("Login component mounted");
-
-    // Check URL for error params (Auth.js redirects here with ?error=...)
-    const urlParams = new URLSearchParams(window.location.search);
-    const errorParam = urlParams.get("error");
-    if (errorParam) {
-      console.error("[Login] Auth error from URL:", errorParam);
-      console.error("[Login] Full URL:", window.location.href);
-      setError(getErrorMessage(errorParam));
-      setDebug(`Auth error: ${errorParam}`);
-    }
-  }, []);
-
   const getErrorMessage = (code: string): string => {
     const errors: Record<string, string> = {
       "Configuration": "Server configuration error. Check server logs for details.",
@@ -39,6 +24,25 @@ export default function LoginPage() {
     };
     return errors[code] ?? `${errors["Default"]} (Code: ${code})`;
   };
+
+  useEffect(() => {
+    console.log("[Login] Page loaded");
+
+
+    // Check URL for error params (Auth.js redirects here with ?error=...)
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get("error");
+    if (errorParam) {
+      console.error("[Login] Auth error from URL:", errorParam);
+      console.error("[Login] Full URL:", window.location.href);
+      requestAnimationFrame(() => {
+        setError(getErrorMessage(errorParam));
+        setDebug(`Auth error: ${errorParam}`);
+      });
+    }
+  }, []);
+
+
 
   const handleSignIn = async (provider: "google" | "github") => {
     console.log(`[Login] Attempting sign in with ${provider}...`);

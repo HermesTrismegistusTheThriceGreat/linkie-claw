@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import type { VoiceTone } from "@/lib/voice-tones";
-import { DEFAULT_VOICE_TONES, VOICE_TONE_LIMITS } from "@/lib/voice-tones";
+import type { ImageStyle } from "@/lib/image-styles";
+import { DEFAULT_IMAGE_STYLES, IMAGE_STYLE_LIMITS } from "@/lib/image-styles";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { UnsavedChangesDialog } from "@/components/ui/unsaved-changes-dialog";
 import { Sidebar } from "@/components/layout/sidebar";
 
-interface VoiceTonesEditorProps {
-    initialTones: VoiceTone[];
-    onSave: (tones: VoiceTone[]) => Promise<{ success: boolean; error?: string }>;
+interface ImageStylesEditorProps {
+    initialStyles: ImageStyle[];
+    onSave: (styles: ImageStyle[]) => Promise<{ success: boolean; error?: string }>;
     onReset: () => Promise<{ success: boolean; error?: string }>;
     user?: {
         name?: string | null;
@@ -18,18 +18,18 @@ interface VoiceTonesEditorProps {
     };
 }
 
-export function VoiceTonesEditor({ initialTones, onSave, onReset, user }: VoiceTonesEditorProps) {
-    const [tones, setTones] = useState<VoiceTone[]>(initialTones);
+export function ImageStylesEditor({ initialStyles, onSave, onReset, user }: ImageStylesEditorProps) {
+    const [styles, setStyles] = useState<ImageStyle[]>(initialStyles);
     const [isSaving, setIsSaving] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
     const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     // Track if user has made changes
-    const hasChanges = JSON.stringify(tones) !== JSON.stringify(initialTones);
+    const hasChanges = JSON.stringify(styles) !== JSON.stringify(initialStyles);
 
-    // Check if current tones match defaults
-    const isDefault = JSON.stringify(tones) === JSON.stringify(DEFAULT_VOICE_TONES);
+    // Check if current styles match defaults
+    const isDefault = JSON.stringify(styles) === JSON.stringify(DEFAULT_IMAGE_STYLES);
 
     // Unsaved changes guard
     const {
@@ -45,9 +45,9 @@ export function VoiceTonesEditor({ initialTones, onSave, onReset, user }: VoiceT
         },
     });
 
-    function updateTone(id: string, field: "name" | "prompt", value: string) {
-        setTones(prev =>
-            prev.map(tone => (tone.id === id ? { ...tone, [field]: value } : tone))
+    function updateStyle(id: string, field: "name" | "prompt", value: string) {
+        setStyles(prev =>
+            prev.map(style => (style.id === id ? { ...style, [field]: value } : style))
         );
         setSaveStatus("idle");
     }
@@ -58,7 +58,7 @@ export function VoiceTonesEditor({ initialTones, onSave, onReset, user }: VoiceT
         setErrorMessage(null);
 
         try {
-            const result = await onSave(tones);
+            const result = await onSave(styles);
             if (result.success) {
                 setSaveStatus("success");
                 setTimeout(() => setSaveStatus("idle"), 3000);
@@ -75,7 +75,7 @@ export function VoiceTonesEditor({ initialTones, onSave, onReset, user }: VoiceT
     }
 
     async function handleReset() {
-        if (!confirm("Are you sure you want to reset all voice tones to their defaults? This cannot be undone.")) {
+        if (!confirm("Are you sure you want to reset all image styles to their defaults? This cannot be undone.")) {
             return;
         }
 
@@ -83,7 +83,7 @@ export function VoiceTonesEditor({ initialTones, onSave, onReset, user }: VoiceT
         try {
             const result = await onReset();
             if (result.success) {
-                setTones(DEFAULT_VOICE_TONES);
+                setStyles(DEFAULT_IMAGE_STYLES);
                 setSaveStatus("idle");
                 setErrorMessage(null);
             } else {
@@ -105,23 +105,23 @@ export function VoiceTonesEditor({ initialTones, onSave, onReset, user }: VoiceT
 
             {/* Main content */}
             <main className="flex-1 overflow-y-auto z-10">
-                <div className="max-w-5xl mx-auto p-10 space-y-8">
+                <div className="max-w-6xl mx-auto p-10 space-y-8">
                     <div>
-                        <h1 className="text-4xl font-bold">Voice &amp; Tones</h1>
+                        <h1 className="text-4xl font-bold">Image Styles</h1>
                         <p className="text-slate-500 mt-2">
-                            Customize the AI prompts that generate your LinkedIn post variations.
-                            Each style defines a different voice for your content.
+                            Customize the visual styles used to generate your images.
+                            Each of the 6 slots corresponds to a different visual medium.
                         </p>
                     </div>
 
-                    <div className="space-y-6" data-testid="voice-tones-editor">
+                    <div className="space-y-6" data-testid="image-styles-editor">
                         {/* Editor cards - 2 column grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {tones.map((tone, index) => (
+                            {styles.map((style, index) => (
                                 <div
-                                    key={tone.id}
+                                    key={style.id}
                                     className="glass-card p-6 rounded-3xl border border-white/50 shadow-sm space-y-4"
-                                    data-testid={`voice-tone-card-${tone.id}`}
+                                    data-testid={`image-style-card-${style.id}`}
                                 >
                                     {/* Slot number badge */}
                                     <div className="flex items-center gap-3">
@@ -129,53 +129,53 @@ export function VoiceTonesEditor({ initialTones, onSave, onReset, user }: VoiceT
                                             {index + 1}
                                         </span>
                                         <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                            Style Slot
+                                            Style Slot ({style.id})
                                         </span>
                                     </div>
 
                                     {/* Style name input */}
                                     <div>
                                         <label
-                                            htmlFor={`tone-name-${tone.id}`}
+                                            htmlFor={`style-name-${style.id}`}
                                             className="block text-sm font-bold text-slate-600 mb-1"
                                         >
-                                            Style Name
+                                            Display Name
                                         </label>
                                         <input
-                                            id={`tone-name-${tone.id}`}
-                                            data-testid={`tone-name-${tone.id}`}
+                                            id={`style-name-${style.id}`}
+                                            data-testid={`style-name-${style.id}`}
                                             type="text"
-                                            value={tone.name}
-                                            onChange={(e) => updateTone(tone.id, "name", e.target.value)}
-                                            maxLength={VOICE_TONE_LIMITS.NAME_MAX_LENGTH}
+                                            value={style.name}
+                                            onChange={(e) => updateStyle(style.id, "name", e.target.value)}
+                                            maxLength={IMAGE_STYLE_LIMITS.NAME_MAX_LENGTH}
                                             className="w-full px-4 py-2 rounded-xl border border-white/50 bg-white/60 focus:outline-none focus:ring-2 focus:ring-primary/50 font-bold"
-                                            placeholder="e.g., Storytelling"
+                                            placeholder="e.g., Photography"
                                         />
                                         <span className="text-xs text-slate-400 mt-1">
-                                            {tone.name.length}/{VOICE_TONE_LIMITS.NAME_MAX_LENGTH}
+                                            {style.name.length}/{IMAGE_STYLE_LIMITS.NAME_MAX_LENGTH}
                                         </span>
                                     </div>
 
                                     {/* Prompt description textarea */}
                                     <div>
                                         <label
-                                            htmlFor={`tone-prompt-${tone.id}`}
+                                            htmlFor={`style-prompt-${style.id}`}
                                             className="block text-sm font-bold text-slate-600 mb-1"
                                         >
-                                            Prompt Description
+                                            Visual Style Prompt
                                         </label>
                                         <textarea
-                                            id={`tone-prompt-${tone.id}`}
-                                            data-testid={`tone-prompt-${tone.id}`}
-                                            value={tone.prompt}
-                                            onChange={(e) => updateTone(tone.id, "prompt", e.target.value)}
-                                            maxLength={VOICE_TONE_LIMITS.PROMPT_MAX_LENGTH}
+                                            id={`style-prompt-${style.id}`}
+                                            data-testid={`style-prompt-${style.id}`}
+                                            value={style.prompt}
+                                            onChange={(e) => updateStyle(style.id, "prompt", e.target.value)}
+                                            maxLength={IMAGE_STYLE_LIMITS.PROMPT_MAX_LENGTH}
                                             rows={3}
                                             className="w-full px-4 py-2 rounded-xl border border-white/50 bg-white/60 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
-                                            placeholder="Describe the voice and tone for this style..."
+                                            placeholder="Describe the visual style..."
                                         />
                                         <span className="text-xs text-slate-400 mt-1">
-                                            {tone.prompt.length}/{VOICE_TONE_LIMITS.PROMPT_MAX_LENGTH}
+                                            {style.prompt.length}/{IMAGE_STYLE_LIMITS.PROMPT_MAX_LENGTH}
                                         </span>
                                     </div>
                                 </div>
@@ -187,7 +187,7 @@ export function VoiceTonesEditor({ initialTones, onSave, onReset, user }: VoiceT
                             <div className="flex items-center gap-3">
                                 {/* Reset button */}
                                 <button
-                                    data-testid="reset-voice-tones"
+                                    data-testid="reset-image-styles"
                                     onClick={handleReset}
                                     disabled={isDefault || isResetting}
                                     className="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-white/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
@@ -211,7 +211,7 @@ export function VoiceTonesEditor({ initialTones, onSave, onReset, user }: VoiceT
 
                                 {/* Save button */}
                                 <button
-                                    data-testid="save-voice-tones"
+                                    data-testid="save-image-styles"
                                     onClick={handleSave}
                                     disabled={!hasChanges || isSaving}
                                     aria-busy={isSaving}
@@ -236,4 +236,3 @@ export function VoiceTonesEditor({ initialTones, onSave, onReset, user }: VoiceT
         </>
     );
 }
-

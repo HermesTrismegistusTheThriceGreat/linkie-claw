@@ -18,6 +18,7 @@ const navItems: NavItem[] = [
   { href: "/analytics", icon: "insights", label: "Analytics" },
   { href: "/create", icon: "auto_fix", label: "AI Writer" },
   { href: "/voice-tones", icon: "record_voice_over", label: "Voice & Tones" },
+  { href: "/image-styles", icon: "palette", label: "Image Styles" },
   { href: "/settings", icon: "settings", label: "Settings" },
 ];
 
@@ -27,9 +28,10 @@ interface SidebarProps {
     email?: string | null;
     image?: string | null;
   };
+  onBeforeNavigate?: (href: string) => boolean;
 }
 
-export function Sidebar({ user }: SidebarProps) {
+export function Sidebar({ user, onBeforeNavigate }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -75,6 +77,11 @@ export function Sidebar({ user }: SidebarProps) {
               key={item.href}
               href={item.href}
               data-testid={testId}
+              onClick={(e) => {
+                if (onBeforeNavigate && !isActive && !onBeforeNavigate(item.href)) {
+                  e.preventDefault();
+                }
+              }}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
                 isActive
@@ -106,6 +113,11 @@ export function Sidebar({ user }: SidebarProps) {
         <Link
           href="/create"
           data-testid="sidebar-btn-new-post"
+          onClick={(e) => {
+            if (onBeforeNavigate && !onBeforeNavigate("/create")) {
+              e.preventDefault();
+            }
+          }}
           className="w-full py-4 bg-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-xl shadow-primary/25 hover:scale-[1.02] active:scale-95 transition-transform"
         >
           <span className="material-symbols-outlined text-xl">add</span>

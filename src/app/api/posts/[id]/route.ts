@@ -4,6 +4,7 @@ import { updatePostSchema } from "@/lib/validations/post";
 import { getPostById, updatePost, deletePost } from "@/lib/db/queries";
 import { mapDbPostToFrontend, mapApiInputToDb } from "@/lib/db/mappers";
 import { log } from "@/lib/logger";
+import { deleteImageFromR2, extractR2KeyFromUrl, isR2Configured } from "@/lib/storage/r2";
 import type { NewPost } from "@/lib/db/schema";
 
 type RouteContext = {
@@ -137,6 +138,14 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     const existingPost = await getPostById(id, userId);
     if (!existingPost) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    }
+
+    // Clean up R2 image if present
+    if (isR2Configured() && existingPost.image_url) {
+      const r2Key = extractR2KeyFromUrl(existingPost.image_url);
+      if (r2Key) {
+        await deleteImageFromR2(r2Key);
+      }
     }
 
     const deletedPost = await deletePost(id, userId);

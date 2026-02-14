@@ -18,7 +18,7 @@ export const DEFAULT_VOICE_TONES: VoiceTone[] = [
 // --- Validation ---
 export const VOICE_TONE_LIMITS = {
     NAME_MAX_LENGTH: 50,
-    PROMPT_MAX_LENGTH: 200,
+    PROMPT_MAX_LENGTH: 700,
     REQUIRED_COUNT: 6,
 } as const;
 

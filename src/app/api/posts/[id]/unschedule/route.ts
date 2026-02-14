@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getPostById, updatePost } from "@/lib/db/queries";
 import { mapDbPostToFrontend } from "@/lib/db/mappers";
-import { cancelSchedule } from "@/lib/api/scheduler";
 import { log } from "@/lib/logger";
 
 type RouteContext = {
@@ -47,24 +46,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const dbPost = await updatePost(id, {
       status: "draft",
       scheduled_at: null,
+      retry_count: 0,
     }, userId);
 
     if (!dbPost) {
       throw new Error("Failed to unschedule post");
-    }
-
-    // Remove from FastAPI scheduler service
-    try {
-      await cancelSchedule(id);
-    } catch (schedulerError) {
-      log("warn", "Scheduler cancellation failed, post unscheduled locally", {
-        postId: id,
-        userId,
-        error:
-          schedulerError instanceof Error
-            ? schedulerError.message
-            : String(schedulerError),
-      });
     }
 
     const post = mapDbPostToFrontend(dbPost);

@@ -27,6 +27,15 @@ export function ImageCard({ image, isSelected, onSelect }: ImageCardProps) {
         className="w-full h-full object-cover"
       />
 
+      {image.styleName && (
+        <div
+          className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider shadow-sm border border-white/20 z-10"
+          data-testid={`image-style-badge-${image.id}`}
+        >
+          {image.styleName}
+        </div>
+      )}
+
       {isSelected ? (
         <div className="absolute inset-0 bg-[#ee5b2b]/10 flex items-center justify-center">
           <span className="material-symbols-outlined text-[#ee5b2b] text-4xl">

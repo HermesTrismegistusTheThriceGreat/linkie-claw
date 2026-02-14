@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { posts, generations, userSettings, linkedinOauthStates } from "@/lib/db/schema";
 import type { NewPost, NewGeneration, NewUserSettings, UserSettings } from "@/lib/db/schema";
 import { DEFAULT_VOICE_TONES, type VoiceTone } from "@/lib/voice-tones";
+import { DEFAULT_IMAGE_STYLES, type ImageStyle } from "@/lib/image-styles";
 import { eq, and, gte, lt, desc, sql } from "drizzle-orm";
 import { startOfMonth, endOfMonth, parseISO, subMinutes } from "date-fns";
 
@@ -204,6 +205,42 @@ export async function incrementPostRetryCount(postId: string) {
     .where(eq(posts.id, postId));
 }
 
+/**
+ * Reschedule a post for retry with exponential backoff.
+ * Global query (no user filtering) — for cron/scheduler use only.
+ * @param id - The post ID
+ * @param newScheduledAt - The new scheduled time (with backoff applied)
+ */
+export async function reschedulePostForRetry(id: string, newScheduledAt: Date) {
+  const result = await db
+    .update(posts)
+    .set({
+      status: "scheduled",
+      scheduled_at: newScheduledAt,
+      updated_at: new Date(),
+    })
+    .where(eq(posts.id, id))
+    .returning();
+  return result[0] ?? null;
+}
+
+/**
+ * Reset a stale 'publishing' post back to 'scheduled'.
+ * Global query (no user filtering) — for cron/scheduler use only.
+ * @param id - The post ID
+ */
+export async function resetStalePost(id: string) {
+  const result = await db
+    .update(posts)
+    .set({
+      status: "scheduled",
+      updated_at: new Date(),
+    })
+    .where(eq(posts.id, id))
+    .returning();
+  return result[0] ?? null;
+}
+
 // ============================================================================
 // Post Status Update Queries (for scheduler and webhooks)
 // ============================================================================
@@ -399,6 +436,37 @@ export async function getUserVoiceTones(userId: string): Promise<VoiceTone[]> {
 export async function saveUserVoiceTones(userId: string, tones: VoiceTone[]): Promise<void> {
   await upsertUserSettings(userId, {
     voice_tones_json: JSON.stringify(tones),
+  });
+}
+
+// ============================================================================
+// Image Style Queries
+// ============================================================================
+
+/**
+ * Get user image styles (or defaults if not set).
+ * @param userId - The user ID
+ */
+export async function getUserImageStyles(userId: string): Promise<ImageStyle[]> {
+  const settings = await getUserSettings(userId);
+  if (!settings?.image_styles_json) {
+    return DEFAULT_IMAGE_STYLES;
+  }
+  try {
+    return JSON.parse(settings.image_styles_json) as ImageStyle[];
+  } catch {
+    return DEFAULT_IMAGE_STYLES;
+  }
+}
+
+/**
+ * Save user image styles.
+ * @param userId - The user ID
+ * @param styles - The image styles to save
+ */
+export async function saveUserImageStyles(userId: string, styles: ImageStyle[]): Promise<void> {
+  await upsertUserSettings(userId, {
+    image_styles_json: JSON.stringify(styles),
   });
 }
 

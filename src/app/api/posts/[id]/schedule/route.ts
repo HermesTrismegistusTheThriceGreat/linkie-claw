@@ -3,7 +3,6 @@ import { auth } from "@/lib/auth";
 import { schedulePostSchema } from "@/lib/validations/post";
 import { getPostById, updatePost } from "@/lib/db/queries";
 import { mapDbPostToFrontend } from "@/lib/db/mappers";
-import { scheduleWithScheduler } from "@/lib/api/scheduler";
 import { log } from "@/lib/logger";
 
 type RouteContext = {
@@ -78,36 +77,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const dbPost = await updatePost(id, {
       status: "scheduled",
       scheduled_at: scheduledAt,
+      retry_count: 0,
     }, userId);
 
     if (!dbPost) {
       throw new Error("Failed to schedule post");
-    }
-
-    // Register with FastAPI scheduler service
-    try {
-      await scheduleWithScheduler(id, result.data.scheduledAt);
-    } catch (schedulerError) {
-      log("error", "Scheduler registration failed, reverting post status", {
-        postId: id,
-        userId,
-        previousStatus: existingPost.status,
-        error:
-          schedulerError instanceof Error
-            ? schedulerError.message
-            : String(schedulerError),
-      });
-
-      // Revert DB status to what it was before
-      await updatePost(id, {
-        status: existingPost.status as "draft" | "scheduled" | "publishing" | "published" | "failed",
-        scheduled_at: existingPost.scheduled_at,
-      }, userId);
-
-      return NextResponse.json(
-        { error: "Scheduler service is unavailable. Post was not scheduled." },
-        { status: 503 }
-      );
     }
 
     const post = mapDbPostToFrontend(dbPost);

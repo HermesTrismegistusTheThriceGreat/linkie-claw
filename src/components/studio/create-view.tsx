@@ -59,18 +59,58 @@ export function CreateView({ user }: CreateViewProps) {
         setSelectedImageId(id);
     };
 
+    /** Upload the selected image to R2 and return the permanent URL */
+    const uploadImageToStorage = async (image: GeneratedImage): Promise<string | null> => {
+        try {
+            const response = await fetch("/api/images/upload", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    base64: image.base64 || undefined,
+                    tempUrl: !image.base64 ? image.url : undefined,
+                    contentType: image.base64 ? "image/png" : "image/webp",
+                }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                console.error("Image upload failed:", error);
+                return null;
+            }
+
+            const data = await response.json();
+            return data.url;
+        } catch (error) {
+            console.error("Image upload error:", error);
+            return null;
+        }
+    };
+
     const handleSchedule = async (scheduledAt: Date) => {
         const content = selectedText?.content;
         if (!content) return;
 
-        // Step 1: Create post as draft
+        // Step 1: Upload selected image to R2 (if image selected)
+        let permanentImageUrl: string | undefined;
+        if (selectedImage) {
+            const uploadedUrl = await uploadImageToStorage(selectedImage);
+            if (uploadedUrl) {
+                permanentImageUrl = uploadedUrl;
+            } else {
+                toast.error("Failed to save image", {
+                    description: "Post will be created without an image",
+                });
+            }
+        }
+
+        // Step 2: Create post as draft (with R2 URL instead of temp URL)
         const createResponse = await fetch("/api/posts", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 title: idea.trim().slice(0, 200),
                 content,
-                imageUrl: selectedImage?.url,
+                imageUrl: permanentImageUrl,
                 status: "draft",
             }),
         });
@@ -85,7 +125,7 @@ export function CreateView({ user }: CreateViewProps) {
 
         const post = await createResponse.json();
 
-        // Step 2: Schedule the draft via the schedule endpoint
+        // Step 3: Schedule the draft via the schedule endpoint
         const scheduleResponse = await fetch(`/api/posts/${post.id}/schedule`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },

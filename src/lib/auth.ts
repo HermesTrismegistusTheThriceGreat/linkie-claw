@@ -19,6 +19,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     accountsTable: accounts,
     sessionsTable: sessions,
     verificationTokensTable: verificationTokens,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any),
   session: {
     strategy: "jwt",

@@ -3,7 +3,6 @@ import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { getPostById, updatePost } from "@/lib/db/queries";
 import { mapDbPostToFrontend, mapDbPostsToFrontend } from "@/lib/db/mappers";
-import { scheduleWithScheduler } from "@/lib/api/scheduler";
 import { log } from "@/lib/logger";
 import { db } from "@/lib/db";
 import { posts } from "@/lib/db/schema";
@@ -152,32 +151,8 @@ export async function POST(request: NextRequest) {
       dbPost = await updatePost(postId, {
         status: "scheduled",
         scheduled_at: scheduledAt,
+        retry_count: 0,
       }, userId);
-
-      // Register with scheduler so the post actually gets picked up
-      try {
-        await scheduleWithScheduler(postId, scheduledAt.toISOString());
-      } catch (schedulerError) {
-        log("error", "Scheduler registration failed during recovery, reverting to publishing", {
-          requestId,
-          userId,
-          postId,
-          error:
-            schedulerError instanceof Error
-              ? schedulerError.message
-              : String(schedulerError),
-        });
-
-        // Revert back to publishing status since scheduler didn't accept it
-        await updatePost(postId, {
-          status: "publishing",
-        }, userId);
-
-        return NextResponse.json(
-          { error: "Scheduler service is unavailable. Recovery failed." },
-          { status: 503 }
-        );
-      }
     } else {
       dbPost = await updatePost(postId, {
         status: "failed",

@@ -9,7 +9,10 @@ export interface TextVariation {
 export interface GeneratedImage {
   id: string;
   url: string;
+  base64?: string;
   prompt: string;
+  styleId?: string;
+  styleName?: string;
 }
 
 export interface GenerationSession {

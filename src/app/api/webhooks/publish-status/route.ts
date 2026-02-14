@@ -146,6 +146,7 @@ export async function POST(request: NextRequest) {
         status: "published",
         linkedin_post_urn: linkedinPostUrn ?? null,
         published_at: new Date(),
+        retry_count: 0,
       }, userId);
     } else {
       updated = await updatePost(postId, {

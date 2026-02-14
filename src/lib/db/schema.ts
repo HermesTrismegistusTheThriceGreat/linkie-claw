@@ -149,6 +149,7 @@ export const userSettings = sqliteTable("user_settings", {
   }),
 
   voice_tones_json: text("voice_tones_json"), // JSON array of 6 VoiceTone objects, null = defaults
+  image_styles_json: text("image_styles_json"), // JSON array of 6 ImageStyle objects, null = defaults
 
   created_at: integer("created_at", { mode: "timestamp" })
     .notNull()
