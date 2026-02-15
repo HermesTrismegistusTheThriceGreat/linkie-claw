@@ -35,10 +35,6 @@ docs/roadmap/                   # Phase implementation docs
 docs/plans/                     # Agent team plan documents
 ```
 
-## n8n Workflow — DO NOT MODIFY
-
-The n8n workflow at `n8n/workflows/linkedin-publish.json` is a fully functional, production-tested publishing system. **Never modify the workflow nodes or logic.** If LinkedIn posting fails, it is a credentials/environment issue — not a code bug. Troubleshoot with the user before touching any n8n configuration.
-
 ## Conventions
 
 1. **Feature branches only** — never push directly to `main`
@@ -84,8 +80,8 @@ npm run dev          # Dev server on localhost:3000
 
 ## Current Phase Status
 
-Completed: Phases 1-6, 8-9 (Auth, Multi-user, Settings, Calendar, Dashboard, Analytics, Voice Tones)
-Remaining: Phase 7 (Node.js Scheduler), Phase 10 (Final Polish), Phase 11 (Production Deployment)
+Completed: Phases 1-9, 12 (Auth, Multi-user, Settings, Calendar, Scheduler, Dashboard, Analytics, Voice Tones, Image Styles, Production Image Pipeline/R2)
+Remaining: n8n Integration Test (end-to-end publishing verification), Phase 10 (Final Polish), Phase 11 (Production Deployment)
 
 ## Agent Teams
 

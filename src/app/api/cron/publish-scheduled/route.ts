@@ -8,6 +8,7 @@ import {
   incrementPostRetryCount,
   reschedulePostForRetry,
   resetStalePost,
+  getLinkedInAccessToken,
 } from "@/lib/db/queries";
 import { log } from "@/lib/logger";
 
@@ -62,6 +63,12 @@ export async function GET(request: NextRequest) {
           throw new Error("User LinkedIn not connected or missing person URN");
         }
 
+        // Get access token (from settings or accounts table)
+        const accessToken = await getLinkedInAccessToken(post.user_id);
+        if (!accessToken) {
+          throw new Error("Missing LinkedIn access token");
+        }
+
         // POST to n8n webhook
         const n8nUrl = process.env.N8N_WEBHOOK_URL;
         if (!n8nUrl) {
@@ -77,6 +84,7 @@ export async function GET(request: NextRequest) {
             personUrn: settings.linkedin_person_urn,
             content: post.content,
             imageUrl: post.image_url,
+            accessToken,
           }),
         });
 

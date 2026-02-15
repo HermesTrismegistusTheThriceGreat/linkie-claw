@@ -19,9 +19,9 @@ Items are listed in the order they'll be needed (by phase).
 - [x] `GITHUB_CLIENT_ID` `(account required)` — GitHub → Settings → Developer settings → OAuth Apps → New (localhost redirect URI)
 - [x] `GITHUB_CLIENT_SECRET` `(account required)` — Same as above
 
-### Phase 7 — Node.js Scheduler (NOT YET BUILT)
+### Phase 7 — Node.js Scheduler (COMPLETED)
 
-- [ ] `CRON_SECRET` `(self-generate)` — Run `openssl rand -hex 32`
+- [x] `CRON_SECRET` `(self-generate)` — Run `openssl rand -hex 32`
 
 ### Phase 8/9 Tier 2 — LinkedIn Analytics (Optional)
 
@@ -104,13 +104,13 @@ Settings page completed. LinkedIn Profile & Account Info features built.
 
 Schedule page with calendar and post editing completed.
 
-### Phase 7 — Node.js Scheduler (NOT YET BUILT)
+### Phase 7 — Node.js Scheduler (COMPLETED)
 
-**Note:** Python FastAPI scheduler is still active. This phase will replace it with Node.js.
+Python FastAPI scheduler replaced with Node.js cron route. Scheduler mechanics verified (auth, retries, backoff, stale recovery). n8n end-to-end integration test still pending.
 
 | Variable | Status | How to Get It | Where to Set |
 |----------|--------|--------------|--------------|
-| `CRON_SECRET` | **Need** | Run `openssl rand -hex 32` | `.env.local` |
+| `CRON_SECRET` | **Have** (COMPLETED) | Run `openssl rand -hex 32` | `.env.local` |
 | `N8N_CALLBACK_SECRET` | **Have** | Already in `.env` | `.env.local` |
 | `N8N_WEBHOOK_URL` | **Have** | Already in `.env` (localhost n8n URL) | `.env.local` |
 
@@ -186,9 +186,9 @@ Voice and tone customization features completed.
 - [x] SQLite database (already exists at `./local.db`)
 - [x] n8n running locally (Docker) at `http://localhost:5678` — **Do NOT modify the n8n workflow.** If posting to LinkedIn fails, it's a credentials/setup issue. See troubleshooting in `docs/roadmap/00-overview.md`.
 
-### Phase 7 — Node.js Scheduler (NOT YET BUILT)
+### Phase 7 — Node.js Scheduler (COMPLETED)
 
-No external infrastructure — scheduler will run as part of Next.js app when built.
+Scheduler runs as part of Next.js app via `/api/cron/publish-scheduled` endpoint. Dev scheduler: `npm run scheduler:dev`.
 
 ### Phase 11 — Production Deployment (UPCOMING)
 
@@ -291,12 +291,14 @@ These keys already exist locally and are used in development:
 - `LINKEDIN_CLIENT_SECRET` — LinkedIn OAuth (for Phase 8/9 Tier 2 when ready)
 - `ENCRYPTION_KEY` — Token encryption (for Phase 8/9 Tier 2 when ready)
 
-### Python Scheduler (scheduler/) — Currently Active Until Phase 7
+### Python Scheduler (scheduler.archived/) — REPLACED by Node.js Scheduler (Phase 7)
 
-- `DATABASE_URL` — PostgreSQL for APScheduler job store
-- `N8N_WEBHOOK_URL` — n8n webhook for publishing
-- `SUNDAY_API_URL` — Next.js API base URL
-- `LOG_LEVEL` — Logging level
+_The Python scheduler has been archived to `scheduler.archived/`. These variables are no longer used._
+
+- ~~`DATABASE_URL` — PostgreSQL for APScheduler job store~~
+- ~~`N8N_WEBHOOK_URL` — n8n webhook for publishing~~
+- ~~`SUNDAY_API_URL` — Next.js API base URL~~
+- ~~`LOG_LEVEL` — Logging level~~
 
 ---
 

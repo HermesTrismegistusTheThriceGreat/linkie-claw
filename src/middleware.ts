@@ -12,6 +12,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/cron") ||
     pathname.startsWith("/api/webhooks") ||
+    pathname.startsWith("/api/internal") ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
@@ -33,5 +34,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api/auth|api/cron|api/webhooks|login|_next/static|_next/image|favicon.ico|images/).*)"],
+  matcher: ["/((?!api/auth|api/cron|api/webhooks|api/internal|login|_next/static|_next/image|favicon.ico|images/).*)"],
 };

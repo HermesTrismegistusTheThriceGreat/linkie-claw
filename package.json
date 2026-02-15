@@ -14,7 +14,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "npx tsx scripts/seed.ts",
-    "scheduler:dev": "npx tsx src/scripts/dev-scheduler.ts"
+    "scheduler:dev": "npx tsx src/scripts/dev-scheduler.ts",
+    "postinstall": "node scripts/patch-drizzle-mcp.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.72.1",
@@ -48,6 +49,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.31.8",
+    "drizzle-mcp": "github:defrex/drizzle-mcp",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",

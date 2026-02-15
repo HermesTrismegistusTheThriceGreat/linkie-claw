@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { posts, generations, userSettings, linkedinOauthStates } from "@/lib/db/schema";
+import { posts, generations, userSettings, linkedinOauthStates, accounts } from "@/lib/db/schema";
 import type { NewPost, NewGeneration, NewUserSettings, UserSettings } from "@/lib/db/schema";
 import { DEFAULT_VOICE_TONES, type VoiceTone } from "@/lib/voice-tones";
 import { DEFAULT_IMAGE_STYLES, type ImageStyle } from "@/lib/image-styles";
@@ -468,6 +468,29 @@ export async function saveUserImageStyles(userId: string, styles: ImageStyle[]):
   await upsertUserSettings(userId, {
     image_styles_json: JSON.stringify(styles),
   });
+}
+
+/**
+ * Get LinkedIn access token for a user.
+ * Checks userSettings first, then falls back to accounts table.
+ * @param userId - The user ID
+ */
+export async function getLinkedInAccessToken(userId: string): Promise<string | null> {
+  // 1. Check user settings
+  const settings = await getUserSettings(userId);
+  if (settings?.linkedin_access_token) {
+    return settings.linkedin_access_token;
+  }
+
+  // 2. Fallback to accounts table (Auth.js)
+  const account = await db
+    .select()
+    .from(accounts)
+    // @ts-ignore - drizzle-orm type inference issue with multi-file schema
+    .where(and(eq(accounts.userId, userId), eq(accounts.provider, "linkedin")))
+    .limit(1);
+
+  return account[0]?.access_token ?? null;
 }
 
 // ============================================================================

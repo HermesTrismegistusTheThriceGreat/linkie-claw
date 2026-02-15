@@ -4,15 +4,16 @@
 
 | Layer | Technology | Status |
 |-------|-----------|--------|
-| **Frontend** | Next.js 16, React 19, TypeScript 5, Tailwind CSS 4, Shadcn UI | ✅ Working prototype |
-| **Backend** | Next.js API routes, Zod validation | ✅ Working |
-| **Database** | SQLite (`better-sqlite3`) + Drizzle ORM | ⚠️ Single-user, no `user_id` |
-| **AI (Text)** | Anthropic Claude (`claude-sonnet-4-20250514`) | ✅ Working |
-| **AI (Images)** | Google Gemini Flash / Replicate FLUX Schnell | ✅ Working |
-| **Scheduler** | None | ❌ Python scheduler removed, Node.js polling not yet implemented |
-| **Publishing** | n8n workflow → LinkedIn API (OAuth 2.0) | ⚠️ Single-user only |
-| **Auth** | None | ❌ Not implemented |
-| **Deployment** | Local development only | ❌ Not deployed |
+| **Frontend** | Next.js 16, React 19, TypeScript 5, Tailwind CSS 4, Shadcn UI | ✅ Complete |
+| **Backend** | Next.js API routes, Zod validation | ✅ Complete |
+| **Database** | SQLite (`better-sqlite3`) + Drizzle ORM (8 tables, user-scoped) | ✅ Complete |
+| **AI (Text)** | Anthropic Claude (`claude-sonnet-4-20250514`) with 6 voice tones | ✅ Complete |
+| **AI (Images)** | Google Gemini Flash / Replicate FLUX Schnell with 6 image styles | ✅ Complete |
+| **Image Storage** | Cloudflare R2 (S3-compatible) — ephemeral previews, R2 on save | ✅ Complete |
+| **Scheduler** | Node.js cron route (`/api/cron/publish-scheduled`) every 60s | ✅ Complete |
+| **Publishing** | n8n workflow → LinkedIn API (OAuth 2.0), multi-user | ⚠️ n8n integration test pending |
+| **Auth** | Auth.js v5 (JWT), Google + GitHub OAuth, Drizzle adapter | ✅ Complete |
+| **Deployment** | Local development only | ❌ Phase 11 |
 
 ---
 
@@ -20,24 +21,28 @@
 
 | Route | Page | Data Source | Status |
 |-------|------|-------------|--------|
-| `/` | Dashboard | `src/lib/mock-data/stats.ts` (hardcoded) | ⚠️ Mock data |
+| `/` | Dashboard | Real DB via `/api/dashboard` | ✅ Live |
 | `/calendar` | Content Calendar | Real DB via `/api/posts` | ✅ Live |
-| `/create` | AI Writer / Studio | Real AI APIs + DB | ✅ Live |
-| `/analytics` | Analytics | Sidebar link exists (`disabled: true`) | ❌ Stub |
-| `/settings` | Settings | Sidebar link exists (`disabled: true`) | ❌ Stub |
+| `/create` | AI Writer / Studio | Real AI APIs + DB, 6 voice tones + 6 image styles | ✅ Live |
+| `/analytics` | Analytics | Real DB via `/api/analytics` | ✅ Live |
+| `/settings` | Settings | Real DB via `/api/settings` | ✅ Live |
+| `/voice-tones` | Voice & Tones | Real DB (user-customizable) | ✅ Live |
+| `/image-styles` | Image Styles | Real DB (user-customizable) | ✅ Live |
+| `/login` | Login | Auth.js (Google + GitHub OAuth) | ✅ Live |
 
 ---
 
-## Database Schema (Current — No User Scoping)
+## Database Schema (8 Tables — User-Scoped)
 
-**Tables:** `posts`, `generations`
+**Auth tables:** `users`, `accounts`, `sessions`, `verificationTokens`
+**App tables:** `posts`, `generations`, `userSettings`, `linkedinOauthStates`
 
-- `posts`: `id`, `title`, `content`, `image_url`, `scheduled_at`, `published_at`, `status`, `linkedin_post_urn`, `error_message`, `created_at`, `updated_at`
-- `generations`: `id`, `idea`, `text_variations_json`, `images_json`, `selected_text_id`, `selected_image_id`, `created_at`
+- `posts`: `id`, `user_id`, `title`, `content`, `image_url`, `scheduled_at`, `published_at`, `status` (draft/scheduled/publishing/published/failed), `linkedin_post_urn`, `error_message`, `retry_count`, `created_at`, `updated_at`
+- `generations`: `id`, `user_id`, `idea`, `text_variations_json`, `images_json`, `selected_text_id`, `selected_image_id`, `created_at`
+- `userSettings`: `id`, `user_id`, LinkedIn profile/OAuth fields, `voice_tones_json`, `image_styles_json`, timestamps
+- `linkedinOauthStates`: `state`, `user_id`, `expires_at`
 
-> **Critical gap:** No `user_id` column in any table. All data is globally shared.
-
-> **Database-First Approach:** ALL schema changes (auth tables, `user_id` columns, user_settings, linkedin_oauth_states, indexes) are consolidated in Phase 1. The existing `posts` and `generations` tables WORK and will be extended, not replaced. Later phases focus on implementation (queries, routes, UI) — not schema changes.
+> All app tables are scoped by `user_id`. Every DB query filters by authenticated user.
 
 ---
 
@@ -64,31 +69,51 @@
 ```
 src/
   app/
-    page.tsx                → Dashboard (uses mock data)
-    calendar/page.tsx       → Calendar (uses real DB)
-    create/page.tsx         → AI Writer (uses real AI + DB)
-    layout.tsx              → Root layout (no auth wrapper)
+    page.tsx                → Dashboard (real DB data via /api/dashboard)
+    calendar/page.tsx       → Calendar (real DB via /api/posts)
+    create/page.tsx         → AI Writer (real AI + DB, voice tones + image styles)
+    analytics/page.tsx      → Analytics (real DB via /api/analytics)
+    settings/page.tsx       → Settings (real DB via /api/settings)
+    voice-tones/page.tsx    → Voice & Tones (user-customizable)
+    image-styles/page.tsx   → Image Styles (user-customizable)
+    login/page.tsx          → Login (Google + GitHub OAuth)
+    layout.tsx              → Root layout (SessionProvider wrapper)
     api/
-      posts/route.ts        → GET/POST posts
-      posts/[id]/route.ts   → GET/PATCH/DELETE single post
+      posts/route.ts        → GET/POST posts (user-scoped)
+      posts/[id]/route.ts   → GET/PUT/DELETE single post (user-scoped)
       posts/[id]/schedule/  → POST schedule a post
       posts/[id]/unschedule/→ POST unschedule
-      generate/text/        → AI text generation
-      generate/image/       → AI image generation
+      posts/recover/        → POST recover failed/stale posts
+      generate/text/        → AI text generation (6 voice tones)
+      generate/image/       → AI image generation (6 image styles)
+      images/upload/        → POST upload selected image to R2
+      cron/publish-scheduled/ → GET cron endpoint (CRON_SECRET auth)
+      dashboard/            → GET dashboard stats
+      analytics/            → GET analytics data
+      settings/             → GET/PUT user settings
       webhooks/publish-status/ → n8n callback
   components/
-    layout/sidebar.tsx      → Navigation (Analytics/Settings disabled)
-    layout/user-card.tsx    → Hardcoded "Alex Rivera" identity
-    dashboard/stats-row.tsx → Uses mock getDashboardStats()
-    dashboard/follower-chart.tsx → Uses mockChartHeights
-    calendar/calendar-day.tsx → Post cards with hover tooltips
+    layout/sidebar.tsx      → Navigation (all pages active)
+    layout/user-card.tsx    → Session user identity
+    dashboard/              → Dashboard components (real data)
+    calendar/               → Calendar components
+    analytics/              → Analytics components
+    studio/                 → AI Writer/Studio components
+    voice-tones/            → Voice tones editor
+    image-styles/           → Image styles editor
+    settings/               → Settings components
   lib/
-    db/schema.ts            → Drizzle schema (posts, generations)
-    db/queries.ts           → All DB queries (no user_id filtering)
-    mock-data/stats.ts      → Hardcoded stats & charts
-    mock-data/posts.ts      → Hardcoded posts & drafts
-    mock-data/generations.ts→ Hardcoded AI variations
-    queries/stats.ts        → Returns mock data with fake delays
+    db/schema.ts            → Drizzle schema (8 tables, user-scoped)
+    db/queries.ts           → All DB queries (user_id filtering)
+    api/                    → AI provider clients (anthropic, gemini, replicate)
+    storage/r2.ts           → Cloudflare R2 image storage
+    auth.ts                 → Auth.js v5 config
+    voice-tones.ts          → Voice tone definitions & validation
+    image-styles.ts         → Image style definitions & validation
+    validations/            → Zod request schemas
+  middleware.ts             → Route protection (session check)
+  scripts/
+    dev-scheduler.ts        → Dev cron trigger (calls /api/cron every 60s)
 ```
 
 ---
@@ -152,12 +177,12 @@ These decisions apply across ALL phases:
 - **How:** Users manually connect their LinkedIn accounts in n8n. The Next.js app displays connection status in Settings but does not handle OAuth flows.
 - **When:** Phase 5 (Settings Page) — display connection status only
 
-### Scheduler Architecture
+### Scheduler Architecture (COMPLETED — Phase 7)
 - **Decision:** Node.js database polling via cron route. Python FastAPI scheduler eliminated.
-- **Why:** Eliminates Python dependency, Docker orchestration, and APScheduler complexity. Simpler deployment model.
-- **How:** Single API route `/api/cron/publish-scheduled` that polls the `posts` table for `status='scheduled'` and `scheduled_at <= now()`, then triggers n8n workflow.
-- **When:** Phase 7 (Node.js Scheduler)
-- **Critical:** No external scheduler service (QStash, APScheduler, etc.) required.
+- **Implementation:** Single API route `/api/cron/publish-scheduled` polls the `posts` table for `status='scheduled'` and `scheduled_at <= now()`, then triggers n8n workflow. Protected by `CRON_SECRET` Bearer token.
+- **Features:** Exponential backoff retry (2min/4min/8min), max 3 retries, stale `publishing` post recovery (>5 min), batch processing (max 10 posts per tick).
+- **Dev mode:** `npm run scheduler:dev` calls the cron endpoint every 60 seconds.
+- **Python scheduler:** Archived to `scheduler.archived/`. `src/lib/api/scheduler.ts` deleted.
 
 ### Deployment Platform
 - **Decision:** TBD at Phase 11. Options: Railway (everything on one platform), Vercel + Railway, or other.
