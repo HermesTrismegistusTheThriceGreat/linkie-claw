@@ -16,7 +16,8 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/login") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
-    pathname.startsWith("/images")
+    pathname.startsWith("/images") ||
+    pathname.startsWith("/uploads")
   ) {
     return NextResponse.next();
   }
@@ -34,5 +35,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api/auth|api/cron|api/webhooks|api/internal|login|_next/static|_next/image|favicon.ico|images/).*)"],
+  matcher: ["/((?!api/auth|api/cron|api/webhooks|api/internal|login|_next/static|_next/image|favicon.ico|images/|uploads/).*)"],
 };
