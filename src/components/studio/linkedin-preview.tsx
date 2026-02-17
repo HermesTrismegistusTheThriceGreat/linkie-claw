@@ -2,7 +2,7 @@ interface LinkedInPreviewProps {
   content: string | null;
   imageUrl: string | null;
   userName?: string;
-  userTitle?: string;
+  userHeadline?: string;
   userAvatar?: string;
 }
 
@@ -10,14 +10,14 @@ export function LinkedInPreview({
   content,
   imageUrl,
   userName = "Alex Rivers",
-  userTitle = "Founder @ Aurora AI | Crafting the future of SaaS | Ex-Google",
+  userHeadline = "Founder @ Aurora AI | Crafting the future of SaaS | Ex-Google",
   userAvatar = "https://lh3.googleusercontent.com/aida-public/AB6AXuAnQ7hhbFrNZpJ8QUT0Zkig7DjX7IjB6Bl48xxznB9iWIqbDKjpgyWZ06-G34S2urzF5X_ATwTKKRqWMq4ifupYYU9QXTYTPHfiJ4IAOKFz9pIId5cn-Qhu0AfOHQiL_nqXc_VmdK2E94Vw5wfFtfLR4Nl7VaQJoD8VrjKejd3bT_fg-HQ-hsOOreBSbHM0XDsTFBQB6AivU6Cfp6Brp2K0x5MRLa-tJ6mp5r0vVcNEZgMK3A1MSfWOQ5RuQCgtezwWCTOQlZ98jjw",
 }: LinkedInPreviewProps) {
   const displayContent = content || "Your post content will appear here...";
   const isPlaceholder = !content;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="writer-linkedin-preview">
       <div className="flex items-center justify-between px-2">
         <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400">
           Live Preview
@@ -42,7 +42,7 @@ export function LinkedInPreview({
               <span className="text-xs font-normal text-gray-500">• 1st</span>
             </div>
             <p className="text-[11px] leading-tight text-gray-500">
-              {userTitle}
+              {userHeadline}
             </p>
             <div className="flex items-center gap-1 text-gray-400">
               <span className="text-[11px]">Just now •</span>
@@ -58,9 +58,8 @@ export function LinkedInPreview({
 
         <div className="space-y-3 px-4 pb-3">
           <p
-            className={`whitespace-pre-wrap text-sm leading-relaxed ${
-              isPlaceholder ? "text-gray-400 italic" : "text-[#333333]"
-            }`}
+            className={`whitespace-pre-wrap text-sm leading-relaxed ${isPlaceholder ? "text-gray-400 italic" : "text-[#333333]"
+              }`}
           >
             {displayContent}
           </p>

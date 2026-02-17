@@ -2,40 +2,21 @@ import Anthropic from "@anthropic-ai/sdk";
 import { log } from "@/lib/logger";
 import type { TextVariation } from "@/types/generation";
 
+import { buildSystemPrompt, DEFAULT_VOICE_TONES, type VoiceTone } from "@/lib/voice-tones";
+
 const client = new Anthropic();
-
-const SYSTEM_PROMPT = `You are a LinkedIn content expert. Generate exactly 6 variations of a LinkedIn post based on the user's idea.
-
-Each variation must:
-- Be under 3000 characters
-- Have a distinct style and tone
-- Include appropriate line breaks for readability
-- Feel authentic and engaging, not corporate
-
-The 6 styles are:
-1. Storytelling - Personal narrative with a lesson
-2. Professional - Industry insights with authority
-3. Short & Punchy - Snappy, high-impact, uses line breaks
-4. Data-Driven - Statistics and numbers as hooks
-5. Conversational - Casual, question-based engagement
-6. Provocative - Hot take or contrarian view
-
-Return ONLY a JSON array with exactly 6 objects:
-[
-  { "id": "var-1", "style": "Storytelling", "content": "..." },
-  { "id": "var-2", "style": "Professional", "content": "..." },
-  ...
-]`;
 
 /**
  * Generate 6 LinkedIn post variations from a user's idea using Claude.
  *
  * @param idea - The user's post idea or topic
+ * @param voiceTones - Optional custom voice tones (defaults used if omitted)
  * @returns Array of 6 TextVariation objects with different styles
  * @throws Error if API call fails or response is invalid
  */
 export async function generateTextVariations(
-  idea: string
+  idea: string,
+  voiceTones?: VoiceTone[]
 ): Promise<TextVariation[]> {
   const startTime = Date.now();
 
@@ -44,10 +25,13 @@ export async function generateTextVariations(
   });
 
   try {
+    const tones = voiceTones ?? DEFAULT_VOICE_TONES;
+    const systemPrompt = buildSystemPrompt(tones);
+
     const response = await client.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 8000,
-      system: SYSTEM_PROMPT,
+      system: systemPrompt,
       messages: [{ role: "user", content: idea }],
     });
 

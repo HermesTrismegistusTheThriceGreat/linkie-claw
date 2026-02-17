@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 import { updatePostSchema } from "@/lib/validations/post";
 import { getPostById, updatePost, deletePost } from "@/lib/db/queries";
 import { mapDbPostToFrontend, mapApiInputToDb } from "@/lib/db/mappers";
 import { log } from "@/lib/logger";
+import { deleteImageFromR2, extractR2KeyFromUrl, isR2Configured } from "@/lib/storage/r2";
 import type { NewPost } from "@/lib/db/schema";
 
 type RouteContext = {
@@ -14,21 +16,32 @@ type RouteContext = {
  * Get a single post by ID
  */
 export async function GET(request: NextRequest, context: RouteContext) {
+  const session = await auth();
+  
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
+  const userId = session.user.id;
   const { id } = await context.params;
 
   try {
-    const dbPost = await getPostById(id);
+    const dbPost = await getPostById(id, userId);
 
     if (!dbPost) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
     const post = mapDbPostToFrontend(dbPost);
-    log("info", "Post fetched", { postId: id });
+    log("info", "Post fetched", { postId: id, userId });
     return NextResponse.json(post);
   } catch (error) {
     log("error", "Failed to fetch post", {
       postId: id,
+      userId,
       error: error instanceof Error ? error.message : String(error),
     });
     return NextResponse.json(
@@ -43,6 +56,16 @@ export async function GET(request: NextRequest, context: RouteContext) {
  * Update a post
  */
 export async function PATCH(request: NextRequest, context: RouteContext) {
+  const session = await auth();
+  
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
+  const userId = session.user.id;
   const { id } = await context.params;
 
   let body: unknown;
@@ -62,8 +85,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    // Check if post exists
-    const existingPost = await getPostById(id);
+    // Check if post exists for this user
+    const existingPost = await getPostById(id, userId);
     if (!existingPost) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
@@ -71,18 +94,19 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     // Map API input to snake_case for DB
     const dbData = mapApiInputToDb(result.data) as Partial<NewPost>;
 
-    const dbPost = await updatePost(id, dbData);
+    const dbPost = await updatePost(id, dbData, userId);
 
     if (!dbPost) {
       throw new Error("Failed to update post");
     }
 
     const post = mapDbPostToFrontend(dbPost);
-    log("info", "Post updated", { postId: id });
+    log("info", "Post updated", { postId: id, userId });
     return NextResponse.json(post);
   } catch (error) {
     log("error", "Failed to update post", {
       postId: id,
+      userId,
       error: error instanceof Error ? error.message : String(error),
     });
     return NextResponse.json(
@@ -97,26 +121,45 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
  * Delete a post
  */
 export async function DELETE(request: NextRequest, context: RouteContext) {
+  const session = await auth();
+  
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
+  const userId = session.user.id;
   const { id } = await context.params;
 
   try {
-    // Check if post exists
-    const existingPost = await getPostById(id);
+    // Check if post exists for this user
+    const existingPost = await getPostById(id, userId);
     if (!existingPost) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    const deletedPost = await deletePost(id);
+    // Clean up R2 image if present
+    if (isR2Configured() && existingPost.image_url) {
+      const r2Key = extractR2KeyFromUrl(existingPost.image_url);
+      if (r2Key) {
+        await deleteImageFromR2(r2Key);
+      }
+    }
+
+    const deletedPost = await deletePost(id, userId);
 
     if (!deletedPost) {
       throw new Error("Failed to delete post");
     }
 
-    log("info", "Post deleted", { postId: id });
+    log("info", "Post deleted", { postId: id, userId });
     return NextResponse.json({ success: true, id });
   } catch (error) {
     log("error", "Failed to delete post", {
       postId: id,
+      userId,
       error: error instanceof Error ? error.message : String(error),
     });
     return NextResponse.json(

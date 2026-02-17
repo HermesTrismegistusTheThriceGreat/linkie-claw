@@ -20,6 +20,7 @@ export function ScheduleButton({
       <button
         onClick={onClick}
         disabled={disabled}
+        data-testid="writer-btn-schedule"
         className={cn(
           "w-full h-14 rounded-full text-white font-black text-lg",
           "shadow-xl shadow-primary/20 transition-all transform",

@@ -15,12 +15,23 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: "/", icon: "dashboard", label: "Dashboard" },
   { href: "/calendar", icon: "calendar_month", label: "Content Calendar" },
-  { href: "/analytics", icon: "insights", label: "Analytics", disabled: true },
+  { href: "/analytics", icon: "insights", label: "Analytics" },
   { href: "/create", icon: "auto_fix", label: "AI Writer" },
-  { href: "/settings", icon: "settings", label: "Settings", disabled: true },
+  { href: "/voice-tones", icon: "record_voice_over", label: "Voice & Tones" },
+  { href: "/image-styles", icon: "palette", label: "Image Styles" },
+  { href: "/settings", icon: "settings", label: "Settings" },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  user?: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
+  onBeforeNavigate?: (href: string) => boolean;
+}
+
+export function Sidebar({ user, onBeforeNavigate }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -46,11 +57,13 @@ export function Sidebar() {
       <nav className="flex-1 px-4 py-4 space-y-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
+          const testId = `sidebar-nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`;
 
           if (item.disabled) {
             return (
               <div
                 key={item.href}
+                data-testid={testId}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl opacity-50 cursor-not-allowed"
               >
                 <span className="material-symbols-outlined">{item.icon}</span>
@@ -63,6 +76,12 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              data-testid={testId}
+              onClick={(e) => {
+                if (onBeforeNavigate && !isActive && !onBeforeNavigate(item.href)) {
+                  e.preventDefault();
+                }
+              }}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
                 isActive
@@ -85,14 +104,20 @@ export function Sidebar() {
       </nav>
 
       {/* User Card */}
-      <div className="px-4 pb-4">
-        <UserCard />
+      <div className="px-4 pb-4" data-testid="sidebar-user-card">
+        <UserCard name={user?.name} email={user?.email} image={user?.image} />
       </div>
 
       {/* Bottom CTA */}
       <div className="px-6 pb-6">
         <Link
           href="/create"
+          data-testid="sidebar-btn-new-post"
+          onClick={(e) => {
+            if (onBeforeNavigate && !onBeforeNavigate("/create")) {
+              e.preventDefault();
+            }
+          }}
           className="w-full py-4 bg-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-xl shadow-primary/25 hover:scale-[1.02] active:scale-95 transition-transform"
         >
           <span className="material-symbols-outlined text-xl">add</span>

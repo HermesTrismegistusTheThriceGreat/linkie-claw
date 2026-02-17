@@ -39,7 +39,12 @@ tsconfig.tsbuildinfo
 
 # OS
 .DS_Store
+Thumbs.db
+nul
 
 # Screenshots (dev artifacts)
 *.png
 !public/**/*.png
+
+# Uploaded/generated images
+public/uploads/

@@ -7,12 +7,13 @@ import type { Post } from "@/types/post";
 interface CalendarGridProps {
   currentMonth: Date;
   posts: Post[];
+  onPostClick?: (post: Post) => void;
   className?: string;
 }
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export function CalendarGrid({ currentMonth, posts, className }: CalendarGridProps) {
+export function CalendarGrid({ currentMonth, posts, onPostClick, className }: CalendarGridProps) {
   // Calculate calendar days to display (including previous/next month padding)
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -33,12 +34,14 @@ export function CalendarGrid({ currentMonth, posts, className }: CalendarGridPro
 
   return (
     <div
+      data-testid="calendar-grid"
       className={`grid grid-cols-7 gap-px glass-card rounded-2xl overflow-hidden border-opacity-20 shadow-2xl relative ${className || ""}`}
     >
       {/* Weekday headers */}
       {WEEKDAY_LABELS.map((day) => (
         <div
           key={day}
+          data-testid={`calendar-weekday-${day.toLowerCase()}`}
           className="bg-black/5 dark:bg-white/5 py-4 text-center text-xs font-bold uppercase tracking-widest opacity-60 border-b border-black/5 dark:border-white/10"
         >
           {day}
@@ -55,10 +58,13 @@ export function CalendarGrid({ currentMonth, posts, className }: CalendarGridPro
         return (
           <CalendarDay
             key={dayKey}
+            data-testid={`calendar-day-${dayKey}`}
             day={day.getDate()}
+            dayKey={dayKey}
             isCurrentMonth={isCurrentMonth}
             isToday={isTodayDate}
             posts={dayPosts}
+            onPostClick={onPostClick}
           />
         );
       })}

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 import {
   createPostSchema,
   listPostsQuerySchema,
@@ -26,6 +27,16 @@ import type { NewPost } from "@/lib/db/schema";
  * - month: Filter by month (YYYY-MM format)
  */
 export async function GET(request: NextRequest) {
+  const session = await auth();
+  
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
+  const userId = session.user.id;
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
   const month = searchParams.get("month");
@@ -47,19 +58,20 @@ export async function GET(request: NextRequest) {
     let dbPosts;
 
     if (status === "scheduled") {
-      dbPosts = await getScheduledPosts(month ?? undefined);
+      dbPosts = await getScheduledPosts(userId, month ?? undefined);
     } else if (month) {
-      dbPosts = await getPostsByMonth(month);
+      dbPosts = await getPostsByMonth(month, userId);
     } else {
-      dbPosts = await getAllPosts();
+      dbPosts = await getAllPosts(userId);
     }
 
     const posts = mapDbPostsToFrontend(dbPosts);
-    log("info", "Posts fetched", { count: posts.length, status, month });
+    log("info", "Posts fetched", { count: posts.length, status, month, userId });
     return NextResponse.json(posts);
   } catch (error) {
     log("error", "Failed to fetch posts", {
       error: error instanceof Error ? error.message : String(error),
+      userId,
     });
     return NextResponse.json(
       { error: "Failed to fetch posts" },
@@ -73,6 +85,16 @@ export async function GET(request: NextRequest) {
  * Create a new post
  */
 export async function POST(request: NextRequest) {
+  const session = await auth();
+  
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
+  const userId = session.user.id;
   let body: unknown;
   try {
     body = await request.json();
@@ -93,8 +115,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Map API input to snake_case for DB
-    const dbData = mapApiInputToDb(result.data) as NewPost;
+    // Map API input to snake_case for DB and add user_id
+    const dbData = {
+      ...mapApiInputToDb(result.data),
+      user_id: userId,
+    } as NewPost & { user_id: string };
 
     const dbPost = await createPost(dbData);
 
@@ -103,11 +128,12 @@ export async function POST(request: NextRequest) {
     }
 
     const post = mapDbPostToFrontend(dbPost);
-    log("info", "Post created", { postId: post.id, title: post.title });
+    log("info", "Post created", { postId: post.id, title: post.title, userId });
     return NextResponse.json(post, { status: 201 });
   } catch (error) {
     log("error", "Failed to create post", {
       error: error instanceof Error ? error.message : String(error),
+      userId,
     });
     return NextResponse.json(
       { error: "Failed to create post" },

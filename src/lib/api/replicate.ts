@@ -1,6 +1,5 @@
 import Replicate from "replicate";
 import { createId } from "@paralleldrive/cuid2";
-import { downloadAndSaveImage } from "@/lib/storage/images";
 import { log } from "@/lib/logger";
 import type { ImageProvider } from "./image-provider";
 import type { GeneratedImage } from "@/types/generation";
@@ -65,11 +64,8 @@ export class ReplicateProvider implements ImageProvider {
 
             for (const url of urls) {
               const id = `img-${createId()}`;
-              const localUrl = await downloadAndSaveImage(
-                typeof url === "string" ? url : String(url),
-                id
-              );
-              results.push({ id, url: localUrl, prompt });
+              const remoteUrl = typeof url === "string" ? url : String(url);
+              results.push({ id, url: remoteUrl, prompt });
             }
 
             return results;
@@ -102,6 +98,69 @@ export class ReplicateProvider implements ImageProvider {
       return images;
     } catch (error) {
       log("error", "Replicate API error", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        model: this.model,
+        duration: Date.now() - startTime,
+      });
+      throw error;
+    }
+  }
+  async generateImagesWithStyles(
+    prompts: string[]
+  ): Promise<GeneratedImage[]> {
+    const startTime = Date.now();
+    log("info", `Generating ${prompts.length} images with Replicate FLUX (styled)`, {
+      model: this.model,
+      promptCount: prompts.length,
+    });
+
+    try {
+      // FLUX doesn't support different prompts in one batch — fire N separate calls
+      const imagePromises = prompts.map(async (prompt) => {
+        const output = await replicate.run(this.model as `${string}/${string}`, {
+          input: {
+            prompt,
+            num_outputs: 1,
+            aspect_ratio: "16:9",
+            output_format: "webp",
+            output_quality: 90,
+          },
+        });
+
+        const urls = Array.isArray(output) ? output : [output];
+        const url = urls[0];
+        const id = `img-${createId()}`;
+        const remoteUrl = typeof url === "string" ? url : String(url);
+        return { id, url: remoteUrl, prompt } as GeneratedImage;
+      });
+
+      const settled = await Promise.allSettled(imagePromises);
+      const images = settled
+        .filter(
+          (r): r is PromiseFulfilledResult<GeneratedImage> =>
+            r.status === "fulfilled"
+        )
+        .map((r) => r.value);
+
+      const failures = settled.filter((r) => r.status === "rejected").length;
+
+      if (images.length === 0) {
+        throw new Error("All styled image generations failed");
+      }
+
+      const duration = Date.now() - startTime;
+      log("info", "Styled images generated via Replicate", {
+        count: images.length,
+        failures,
+        duration,
+        model: this.model,
+        mode: "styled",
+      });
+
+      return images;
+    } catch (error) {
+      log("error", "Replicate API error (styled)", {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         model: this.model,

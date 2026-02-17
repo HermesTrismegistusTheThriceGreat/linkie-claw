@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 import { generateTextSchema } from "@/lib/validations/generation";
 import { generateTextVariations } from "@/lib/api/anthropic";
 import { log } from "@/lib/logger";
-
+import { getUserVoiceTones } from "@/lib/db/queries";
 export async function POST(request: NextRequest) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
   const requestId = crypto.randomUUID();
 
   try {
@@ -25,7 +35,8 @@ export async function POST(request: NextRequest) {
     log("info", "Text generation started", { requestId, ideaLength: result.data.idea.length });
 
     const start = Date.now();
-    const variations = await generateTextVariations(result.data.idea);
+    const voiceTones = await getUserVoiceTones(session.user.id);
+    const variations = await generateTextVariations(result.data.idea, voiceTones);
     const duration = Date.now() - start;
 
     log("info", "Text generation completed", {

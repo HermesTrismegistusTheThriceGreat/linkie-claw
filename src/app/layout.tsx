@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
+import { SessionProvider } from "next-auth/react";
+import { auth } from "@/lib/auth";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -14,11 +16,13 @@ export const metadata: Metadata = {
   description: "AI-powered LinkedIn post scheduling dashboard",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
   return (
     <html lang="en">
       <head>
@@ -28,7 +32,9 @@ export default function RootLayout({
         />
       </head>
       <body className={`${plusJakarta.variable} font-sans antialiased`}>
-        {children}
+        <SessionProvider session={session}>
+          {children}
+        </SessionProvider>
         <Toaster position="top-right" richColors />
       </body>
     </html>

@@ -2,15 +2,20 @@ import Link from "next/link";
 import { getRecentDrafts } from "@/lib/queries/posts";
 import { DraftCard } from "./draft-card";
 
-export async function RecentDrafts() {
-  const drafts = await getRecentDrafts(2);
+interface RecentDraftsProps {
+  userId: string;
+}
+
+export async function RecentDrafts({ userId }: RecentDraftsProps) {
+  const drafts = await getRecentDrafts(userId, 2);
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-4" data-testid="dashboard-recent-drafts">
       <div className="flex items-center justify-between px-2">
-        <h3 className="text-xl font-bold">Recent Drafts</h3>
+        <h2 className="text-xl font-bold">Recent Drafts</h2>
         <Link
           href="/drafts"
+          data-testid="dashboard-link-see-all-drafts"
           className="text-primary font-bold text-sm hover:underline"
         >
           See all

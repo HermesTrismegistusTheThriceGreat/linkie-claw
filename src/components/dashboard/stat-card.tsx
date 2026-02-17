@@ -21,17 +21,22 @@ const colorClasses = {
   },
 } as const;
 
+interface StatCardWithTestId extends StatCardProps {
+  'data-testid'?: string;
+}
+
 export function StatCard({
   label,
   value,
   changeLabel,
   icon,
   color,
-}: StatCardProps) {
+  'data-testid': dataTestId,
+}: StatCardWithTestId) {
   const colors = colorClasses[color];
 
   return (
-    <div className="glass-card p-6 rounded-2xl border border-white/40 shadow-sm group hover:shadow-md transition-shadow">
+    <div data-testid={dataTestId} className="glass-card p-6 rounded-2xl border border-white/40 shadow-sm group hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-4">
         <div className={`p-2 ${colors.bg} rounded-lg`}>
           <span className={`material-symbols-outlined ${colors.text}`}>

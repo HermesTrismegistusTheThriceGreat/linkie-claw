@@ -21,7 +21,7 @@ export async function generateTextVariations(
 
     if (!response.ok) {
       const error = await response.json();
-      console.error("Text generation API error:", error);
+      console.error("Text generation API error — FULL DETAILS:", JSON.stringify(error, null, 2));
       throw new Error(error.error || "Text generation failed");
     }
 
@@ -37,12 +37,12 @@ export async function generateTextVariations(
   }
 }
 
-export async function generateImages(prompt: string): Promise<GeneratedImage[]> {
+export async function generateImages(idea: string): Promise<GeneratedImage[]> {
   try {
     const response = await fetch("/api/generate/image", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({ idea }),
     });
 
     if (!response.ok) {
@@ -58,7 +58,7 @@ export async function generateImages(prompt: string): Promise<GeneratedImage[]> 
     return mockImages.map((img) => ({
       ...img,
       id: `${img.id}-${Date.now()}`,
-      prompt,
+      prompt: idea,
     }));
   }
 }

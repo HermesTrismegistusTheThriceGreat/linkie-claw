@@ -1,10 +1,4 @@
-export type VariationStyle =
-  | "Storytelling"
-  | "Professional"
-  | "Short & Punchy"
-  | "Data-Driven"
-  | "Conversational"
-  | "Provocative";
+export type VariationStyle = string;
 
 export interface TextVariation {
   id: string;
@@ -15,7 +9,10 @@ export interface TextVariation {
 export interface GeneratedImage {
   id: string;
   url: string;
+  base64?: string;
   prompt: string;
+  styleId?: string;
+  styleName?: string;
 }
 
 export interface GenerationSession {

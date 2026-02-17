@@ -57,9 +57,9 @@ export function ScheduleModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="rounded-2xl p-6 sm:max-w-md bg-white border border-black/5 shadow-[0_20px_40px_rgba(0,0,0,0.1)]">
+      <DialogContent data-testid="schedule-modal" className="rounded-2xl p-6 sm:max-w-md bg-white border border-black/5 shadow-[0_20px_40px_rgba(0,0,0,0.1)]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+          <DialogTitle data-testid="schedule-modal-title" className="flex items-center gap-2 text-lg font-bold">
             <span className="material-symbols-outlined text-[#ee5b2b]">
               calendar_today
             </span>
@@ -108,6 +108,7 @@ export function ScheduleModal({
               value={date}
               min={getTodayDate()}
               onChange={(e) => setDate(e.target.value)}
+              data-testid="schedule-input-date"
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-[#ee5b2b] focus:ring-2 focus:ring-[#ee5b2b]/20 focus:outline-none transition-colors"
             />
           </div>
@@ -128,6 +129,7 @@ export function ScheduleModal({
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
+              data-testid="schedule-input-time"
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-[#ee5b2b] focus:ring-2 focus:ring-[#ee5b2b]/20 focus:outline-none transition-colors"
             />
           </div>
@@ -137,6 +139,7 @@ export function ScheduleModal({
           <button
             type="button"
             onClick={() => onOpenChange(false)}
+            data-testid="schedule-btn-cancel"
             className="rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
           >
             Cancel
@@ -145,6 +148,7 @@ export function ScheduleModal({
             type="button"
             onClick={handleSchedule}
             disabled={!canSubmit}
+            data-testid="schedule-btn-confirm"
             className="rounded-xl bg-gradient-to-r from-[#ee5b2b] to-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#ee5b2b]/20 flex items-center gap-2 hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             <span className="material-symbols-outlined text-lg">

@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 import { generateImageSchema } from "@/lib/validations/generation";
 import { getImageProvider } from "@/lib/api/image-provider";
-import { cleanupOldImages } from "@/lib/storage/images";
 import { log } from "@/lib/logger";
+import { getUserImageStyles } from "@/lib/db/queries";
+import { buildImagePrompt } from "@/lib/image-styles";
 
 const DEFAULT_COUNT = 6;
 
 export async function POST(request: NextRequest) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
   const requestId = crypto.randomUUID();
   log("info", "Image generation request received", { requestId });
 
@@ -55,32 +66,39 @@ export async function POST(request: NextRequest) {
     const imageCount = result.data.count ?? DEFAULT_COUNT;
     const imageProvider = await getImageProvider(result.data.provider);
 
-    log("info", "Starting image generation", {
+    // Fetch user's image styles
+    const imageStyles = await getUserImageStyles(session.user.id satisfies string);
+
+    // Build per-style prompts
+    // We strictly use the first N styles for now (normally 6)
+    const prompts = imageStyles.slice(0, imageCount).map((style) =>
+      buildImagePrompt(result.data.idea, style)
+    );
+
+    log("info", "Starting styled image generation", {
       requestId,
       provider: imageProvider.name,
       count: imageCount,
-      promptLength: result.data.prompt.length,
+      ideaLength: result.data.idea.length,
     });
 
-    // Clean up old images before generating new ones
-    const cleaned = await cleanupOldImages();
-    if (cleaned > 0) {
-      log("info", "Cleaned up old images", { requestId, deleted: cleaned });
-    }
+    const images = await imageProvider.generateImagesWithStyles(prompts);
 
-    const images = await imageProvider.generateImages(
-      result.data.prompt,
-      imageCount
-    );
+    // Attach style metadata to images
+    const imagesWithStyles = images.map((img, i) => ({
+      ...img,
+      styleId: imageStyles[i]?.id,
+      styleName: imageStyles[i]?.name,
+    }));
 
     log("info", "Image generation successful", {
       requestId,
       provider: imageProvider.name,
-      count: images.length,
+      count: imagesWithStyles.length,
     });
 
     return NextResponse.json({
-      images,
+      images: imagesWithStyles,
       provider: imageProvider.name,
       count: images.length,
     });

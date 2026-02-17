@@ -3,6 +3,7 @@ import type { GeneratedImage } from "@/types/generation";
 export interface ImageProvider {
   name: string;
   generateImages(prompt: string, count: number): Promise<GeneratedImage[]>;
+  generateImagesWithStyles(prompts: string[]): Promise<GeneratedImage[]>;
 }
 
 export type ProviderName = "replicate" | "gemini";

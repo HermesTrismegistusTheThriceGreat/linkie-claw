@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { timingSafeEqual } from "crypto";
-import { getPostById, updatePost } from "@/lib/db/queries";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { posts } from "@/lib/db/schema";
+import { updatePost } from "@/lib/db/queries";
 import { log } from "@/lib/logger";
 
 const publishStatusSchema = z
@@ -23,6 +26,9 @@ const publishStatusSchema = z
  * POST /api/webhooks/publish-status
  * Callback from n8n after LinkedIn publish attempt.
  * Updates post status to published (with URN) or failed (with error).
+ * 
+ * Note: This endpoint is called by n8n, not by an authenticated user.
+ * Authentication is via webhook secret, not session.
  */
 export async function POST(request: NextRequest) {
   const requestId = crypto.randomUUID();
@@ -77,8 +83,14 @@ export async function POST(request: NextRequest) {
     ...(status === "failed" && error ? { n8nError: error } : {}),
   });
 
-  // Check post exists
-  const existingPost = await getPostById(postId);
+  // Check post exists (internal webhook - no user filtering)
+  const existingPostResult = await db
+    .select()
+    .from(posts)
+    .where(eq(posts.id, postId))
+    .limit(1);
+  const existingPost = existingPostResult[0];
+  
   if (!existingPost) {
     log("warn", "Webhook callback for non-existent post", {
       requestId,
@@ -127,17 +139,20 @@ export async function POST(request: NextRequest) {
 
   try {
     let updated;
+    const userId = existingPost.user_id;
+    
     if (status === "published") {
       updated = await updatePost(postId, {
         status: "published",
         linkedin_post_urn: linkedinPostUrn ?? null,
         published_at: new Date(),
-      });
+        retry_count: 0,
+      }, userId);
     } else {
       updated = await updatePost(postId, {
         status: "failed",
         error_message: error ?? "Unknown publishing error",
-      });
+      }, userId);
     }
 
     if (!updated) {
