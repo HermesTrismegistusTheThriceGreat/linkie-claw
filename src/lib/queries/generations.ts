@@ -21,7 +21,7 @@ export async function generateTextVariations(
 
     if (!response.ok) {
       const error = await response.json();
-      console.error("Text generation API error:", error);
+      console.error("Text generation API error — FULL DETAILS:", JSON.stringify(error, null, 2));
       throw new Error(error.error || "Text generation failed");
     }
 

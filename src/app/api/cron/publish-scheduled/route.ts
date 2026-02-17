@@ -65,12 +65,10 @@ export async function GET(request: NextRequest) {
 
         // Get access token (from settings or accounts table)
         const accessToken = await getLinkedInAccessToken(post.user_id);
-        if (!accessToken) {
-          throw new Error("Missing LinkedIn access token");
-        }
+        // accessToken is optional — n8n manages OAuth credentials directly
 
-        // POST to n8n webhook
-        const n8nUrl = process.env.N8N_WEBHOOK_URL;
+        // POST to n8n webhook (per-user URL, falling back to env var)
+        const n8nUrl = settings.n8n_webhook_url || process.env.N8N_WEBHOOK_URL;
         if (!n8nUrl) {
           throw new Error("N8N_WEBHOOK_URL not configured");
         }
@@ -84,7 +82,7 @@ export async function GET(request: NextRequest) {
             personUrn: settings.linkedin_person_urn,
             content: post.content,
             imageUrl: post.image_url,
-            accessToken,
+            ...(accessToken && { accessToken }),
           }),
         });
 

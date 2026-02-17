@@ -1,8 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { createId } from "@paralleldrive/cuid2";
+import sharp from "sharp";
 import { uploadImageToR2, isR2Configured } from "@/lib/storage/r2";
 import { log } from "@/lib/logger";
+
+/**
+ * Re-encode image to strip all metadata (C2PA, EXIF, IPTC, XMP).
+ * LinkedIn detects C2PA metadata embedded by AI providers (e.g. Google Gemini)
+ * and displays a "CR" (Content Credentials) badge. Re-encoding removes it.
+ * PNG re-encoding is lossless; WebP/JPEG use quality 90 (imperceptible loss).
+ */
+async function stripImageMetadata(buffer: Buffer, contentType: string): Promise<Buffer> {
+  const image = sharp(buffer);
+  if (contentType.includes("png")) {
+    return image.png().toBuffer();
+  }
+  if (contentType.includes("webp")) {
+    return image.webp({ quality: 90 }).toBuffer();
+  }
+  return image.jpeg({ quality: 90 }).toBuffer();
+}
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -54,6 +72,8 @@ export async function POST(request: NextRequest) {
 
     const imageId = createId();
     const key = `posts/${session.user.id}/${imageId}.${ext}`;
+
+    imageBuffer = await stripImageMetadata(imageBuffer, finalContentType);
 
     const publicUrl = await uploadImageToR2(imageBuffer, key, finalContentType);
 

@@ -35,18 +35,117 @@ docs/roadmap/                   # Phase implementation docs
 docs/plans/                     # Agent team plan documents
 ```
 
+## Commands
+
+```bash
+npm run dev          # Dev server on localhost:3000
+npm run build        # Full Next.js production build
+npm run typecheck    # TypeScript compilation check
+npm run lint:fix     # ESLint with auto-fix
+npm run test         # TBD — test framework not yet configured
+npm run db:push      # Push schema changes to database
+npm run db:studio    # Open Drizzle Studio (DB browser)
+```
+
+---
+
+## How I Want You to Work
+
+### Before Coding
+- Ask clarifying questions before starting
+- Draft a plan for complex work and confirm before coding
+- If unsure, ask — don't assume
+
+### While Coding
+- Write complete, working code — no placeholders, no TODOs
+- Keep it simple and readable over clever
+- Follow existing patterns in the codebase
+- One change at a time, verify as you go
+
+### After Coding
+- Run `npm run typecheck` and `npm run lint:fix` to verify changes
+- Run `npm run build` for anything touching types, routes, or schema
+- Summarize what you changed and why
+
+---
+
+## Code Style
+
+- Use ES modules (`import`/`export`) — no CommonJS `require()`
+- Functional React components with hooks — no class components
+- Type hints on all function parameters and return types
+- Descriptive variable names — no single-letter names outside loops
+- No commented-out code — delete it or use version control
+- File naming: kebab-case (`my-component.tsx`)
+- Types: PascalCase (`Post`, `Generation`), Functions: camelCase
+- Zod for all request validation, Drizzle ORM for all DB access
+- `data-testid` attributes on all interactive elements
+- Preserve design language: Aurora backgrounds, glass cards, Plus Jakarta Sans
+
 ## Conventions
 
 1. **Feature branches only** — never push directly to `main`
-2. Run `npm run typecheck` after schema/type changes
-3. Run `npm run lint:fix` before committing
-4. Run `npm run build` to verify no build failures
-5. Use `data-testid` attributes on all interactive elements
-6. Preserve design language: Aurora backgrounds, glass cards, Plus Jakarta Sans
-7. Every API route must validate the authenticated user session
-8. Every DB query must filter by `user_id`
-9. File naming: kebab-case (`my-component.tsx`)
-10. Types: PascalCase (`Post`, `Generation`), Functions: camelCase
+2. Every API route must validate the authenticated user session
+3. Every DB query must filter by `user_id`
+4. Run `typecheck` after schema/type changes
+5. Run `lint:fix` before committing
+6. Run `build` to verify no build failures
+
+## Do Not
+
+- Commit directly to `main`
+- Leave placeholder code or TODOs in committed code
+- Make changes outside the scope of the current task
+- Add features, refactor, or "improve" code that wasn't requested
+- Assume — ask if unclear
+- Add unnecessary error handling for impossible scenarios
+- Create abstractions for one-time operations
+
+---
+
+## Verification Loop
+
+After completing a task, verify:
+1. `npm run typecheck` — code compiles without errors
+2. `npm run lint:fix` — no linting warnings remain
+3. `npm run build` — production build succeeds (when applicable)
+4. Changes match the original request — no scope creep
+
+If any fail, fix before marking complete.
+
+---
+
+## Quick Commands
+
+Lightweight inline behaviors (not slash skills — those are separate):
+
+**"plan"** — Analyze the task, draft an approach, ask clarifying questions. Don't write code yet.
+
+**"build"** — Implement the plan, run typecheck + lint, verify it works.
+
+**"check"** — Review changes like a skeptical senior dev. Check for bugs, edge cases, and code quality.
+
+**"verify"** — Run typecheck, lint, and build. Summarize results.
+
+**"done"** — Summarize what changed, what was verified, and any notes.
+
+> For heavy-weight multi-agent operations, use slash skills instead: `/create-plan`, `/build-with-agent-team`, `/execute-plan`
+
+---
+
+## Success Criteria
+
+A task is complete when:
+- [ ] Code runs without errors
+- [ ] `typecheck` passes
+- [ ] All tests pass
+- [ ] No linting warnings (`lint:fix`)
+- [ ] `build` succeeds (when applicable)
+- [ ] Feature works as requested
+- [ ] Changes are minimal and focused
+- [ ] I can understand what changed without explanation
+
+---
 
 ## Database Schema (8 tables)
 
@@ -69,15 +168,6 @@ Key columns on `posts`: status enum `[draft, scheduled, publishing, published, f
 | `/api/analytics` | GET | Analytics data |
 | `/api/settings` | GET, PUT | User settings |
 
-## Validation Commands
-
-```bash
-npm run typecheck    # TypeScript compilation check
-npm run lint:fix     # ESLint with auto-fix
-npm run build        # Full Next.js production build
-npm run dev          # Dev server on localhost:3000
-```
-
 ## Current Phase Status
 
 Completed: Phases 1-9, 12 (Auth, Multi-user, Settings, Calendar, Scheduler, Dashboard, Analytics, Voice Tones, Image Styles, Production Image Pipeline/R2)
@@ -89,3 +179,23 @@ This project uses Claude Code Agent Teams for multi-agent implementation.
 - Plans: `docs/plans/` — formatted for `/build-with-agent-team`
 - Workflow: `/create-plan` (research) → plan document → `/build-with-agent-team` (implementation) → `validator` (testing)
 - Use sub-agents for research, agent teams for implementation
+
+---
+
+## Notes & Gotchas
+
+### LinkedIn API
+- The `commentary` field uses `little` text format — reserved characters MUST be backslash-escaped: `| { } @ [ ] ( ) < > # \ * _ ~`
+- Escaping is handled by `escapeForLinkedIn()` in `/api/internal/posts/[id]/route.ts`
+- Image posts: `content.media` should only contain `id` (and optional `altText`). Do NOT include `title`.
+- API version header: `Linkedin-Version: 202602`
+- Full docs: `docs/research/linkedin-api-character-rules.md`
+
+### n8n Workflows
+- Middleware at `src/middleware.ts` must allow `/uploads/`, `/api/internal/`, `/api/cron/`, `/api/webhooks/` without auth
+- Updating workflow code via API requires deactivate → activate cycle (POST `/deactivate` then `/activate` with `versionId`)
+- Expression nodes use `.first().json` (not `.item.json`) to avoid item linking failures through binary nodes
+- n8n execution data uses "flatted" JSON format — parse with index-based dereferencing
+
+### Testing
+- No test framework configured yet — `npm run test` is a placeholder for future setup

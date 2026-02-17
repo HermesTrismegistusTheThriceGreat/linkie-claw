@@ -151,6 +151,8 @@ export const userSettings = sqliteTable("user_settings", {
   voice_tones_json: text("voice_tones_json"), // JSON array of 6 VoiceTone objects, null = defaults
   image_styles_json: text("image_styles_json"), // JSON array of 6 ImageStyle objects, null = defaults
 
+  n8n_webhook_url: text("n8n_webhook_url"), // Per-user n8n webhook URL for publishing
+
   created_at: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
