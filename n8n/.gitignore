@@ -1,0 +1,6 @@
+# n8n specific ignores
+*.sqlite*
+.railway/
+node_modules/
+npm-debug.log*
+.env
