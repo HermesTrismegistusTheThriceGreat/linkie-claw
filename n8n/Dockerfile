@@ -6,4 +6,7 @@ RUN npm install -g n8n
 
 EXPOSE 5678
 
-CMD ["sh", "-c", "sleep 3 && n8n"]
+COPY startup.sh /startup.sh
+RUN chmod +x /startup.sh
+
+CMD ["/startup.sh"]
