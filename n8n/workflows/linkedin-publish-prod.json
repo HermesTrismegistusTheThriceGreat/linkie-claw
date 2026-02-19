@@ -65,14 +65,14 @@
             {
                 "parameters": {
                     "method": "GET",
-                    "url": "=https://linkie-claw-production.up.railway.app/api/internal/posts/{{ $json.body.postId }}",
+                    "url": "={{$env.APP_URL}}/api/internal/posts/{{ $json.body.postId }}",
                     "options": {},
                     "sendHeaders": true,
                     "headerParameters": {
                         "parameters": [
                             {
                                 "name": "Authorization",
-                                "value": "Bearer sTNYUMVrhREvUV+AAwnVnOn8vOgHaeHsOX5MeUwK4ys="
+                                "value": "=Bearer {{$env.CRON_SECRET}}"
                             }
                         ]
                     }
@@ -219,7 +219,7 @@
             },
             {
                 "parameters": {
-                    "jsCode": "let imageUrl = $('HTTP Request - Fetch Post').first().json.imageUrl;\n\n// Resolve relative paths to full URLs (images served by Next.js)\nif (imageUrl.startsWith('/')) {\n  imageUrl = 'https://linkie-claw-production.up.railway.app' + imageUrl;\n}\n\n// Validate it looks like a URL (no new URL() \u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u20ac\udc9d sandbox restriction)\nif (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {\n  throw new Error('Invalid image URL: must start with http(s)://');\n}\n\n// Validate supported file extension\nconst supportedExtensions = ['.jpg', '.jpeg', '.png', '.gif'];\nconst pathPart = imageUrl.split('?')[0].toLowerCase();\nconst hasValidExtension = supportedExtensions.some(ext => pathPart.endsWith(ext));\n\nif (!hasValidExtension) {\n  throw new Error('Unsupported image format: ' + supportedExtensions.join(', '));\n}\n\n// Pass resolved URL downstream\nconst items = $input.all();\nitems[0].json.resolvedImageUrl = imageUrl;\nreturn items;"
+                    "jsCode": "let imageUrl = $('HTTP Request - Fetch Post').first().json.imageUrl;\n\n// Resolve relative paths to full URLs (images served by Next.js)\nif (imageUrl.startsWith('/')) {\n  imageUrl = 'https://app.linkyai.dev' + imageUrl;\n}\n\n// Validate it looks like a URL (no new URL() \u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u20ac\udc9d sandbox restriction)\nif (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {\n  throw new Error('Invalid image URL: must start with http(s)://');\n}\n\n// Validate supported file extension\nconst supportedExtensions = ['.jpg', '.jpeg', '.png', '.gif'];\nconst pathPart = imageUrl.split('?')[0].toLowerCase();\nconst hasValidExtension = supportedExtensions.some(ext => pathPart.endsWith(ext));\n\nif (!hasValidExtension) {\n  throw new Error('Unsupported image format: ' + supportedExtensions.join(', '));\n}\n\n// Pass resolved URL downstream\nconst items = $input.all();\nitems[0].json.resolvedImageUrl = imageUrl;\nreturn items;"
                 },
                 "id": "validate-image",
                 "name": "Validate Image",
@@ -280,7 +280,7 @@
             {
                 "parameters": {
                     "method": "GET",
-                    "url": "={{ $('Validate Image').item.json.resolvedImageUrl }}",
+                    "url": "={{ $('Validate Image').first().json.resolvedImageUrl }}",
                     "options": {
                         "response": {
                             "response": {
@@ -307,7 +307,7 @@
             {
                 "parameters": {
                     "method": "PUT",
-                    "url": "={{ $('Initialize Upload').item.json.value.uploadUrl }}",
+                    "url": "={{ $('Initialize Upload').first().json.value.uploadUrl }}",
                     "authentication": "predefinedCredentialType",
                     "nodeCredentialType": "linkedInOAuth2Api",
                     "sendHeaders": true,
@@ -413,7 +413,7 @@
             {
                 "parameters": {
                     "method": "POST",
-                    "url": "https://linkie-claw-production.up.railway.app/api/webhooks/publish-status",
+                    "url": "={{$env.APP_URL}}/api/webhooks/publish-status",
                     "sendHeaders": true,
                     "headerParameters": {
                         "parameters": [
@@ -447,7 +447,7 @@
             {
                 "parameters": {
                     "method": "POST",
-                    "url": "https://linkie-claw-production.up.railway.app/api/webhooks/publish-status",
+                    "url": "={{$env.APP_URL}}/api/webhooks/publish-status",
                     "sendHeaders": true,
                     "headerParameters": {
                         "parameters": [
@@ -481,7 +481,7 @@
             {
                 "parameters": {
                     "method": "POST",
-                    "url": "https://linkie-claw-production.up.railway.app/api/webhooks/publish-status",
+                    "url": "={{$env.APP_URL}}/api/webhooks/publish-status",
                     "sendHeaders": true,
                     "headerParameters": {
                         "parameters": [
