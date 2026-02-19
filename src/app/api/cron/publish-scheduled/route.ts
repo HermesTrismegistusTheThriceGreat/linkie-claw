@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import {
   getPostsReadyToPublish,
   getStalePublishingPosts,
@@ -18,8 +19,18 @@ const MAX_BATCH_SIZE = 10;
 
 export async function GET(request: NextRequest) {
   // Verify CRON_SECRET
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    log("error", "CRON_SECRET not configured");
+    return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
+  }
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const expected = `Bearer ${cronSecret}`;
+  if (
+    !authHeader ||
+    authHeader.length !== expected.length ||
+    !timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected))
+  ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

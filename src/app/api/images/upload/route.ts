@@ -64,6 +64,14 @@ export async function POST(request: NextRequest) {
       finalContentType = response.headers.get("content-type") || contentType || "image/webp";
     }
 
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (imageBuffer.length > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "File size exceeds 10MB limit" },
+        { status: 400 }
+      );
+    }
+
     const ext = finalContentType.includes("webp")
       ? "webp"
       : finalContentType.includes("png")

@@ -14,7 +14,7 @@ export default async function SettingsPage() {
   const user = await getAuthUser();
   const settings = await getUserSettings(user.id);
 
-  const linkedinConnected = settings?.linkedin_connected === 1;
+  const linkedinConnected = settings?.linkedin_connected === true;
   const linkedinProfileUrl = settings?.linkedin_profile_url ?? null;
   const linkedinHeadline = settings?.linkedin_headline ?? null;
 

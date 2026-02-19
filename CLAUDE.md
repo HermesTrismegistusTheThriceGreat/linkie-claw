@@ -84,7 +84,7 @@ npm run db:studio    # Open Drizzle Studio (DB browser)
 
 ## Conventions
 
-1. **Feature branches only** — never push directly to `main`
+1. **Direct pushes to `main` are allowed** — use PRs for large changes or team review
 2. Every API route must validate the authenticated user session
 3. Every DB query must filter by `user_id`
 4. Run `typecheck` after schema/type changes
@@ -93,7 +93,6 @@ npm run db:studio    # Open Drizzle Studio (DB browser)
 
 ## Do Not
 
-- Commit directly to `main`
 - Leave placeholder code or TODOs in committed code
 - Make changes outside the scope of the current task
 - Add features, refactor, or "improve" code that wasn't requested
