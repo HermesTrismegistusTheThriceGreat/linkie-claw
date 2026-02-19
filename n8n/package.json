@@ -1,0 +1,12 @@
+{
+  "name": "linkie-claw-n8n",
+  "version": "1.0.0",
+  "private": true,
+  "description": "n8n workflow automation for Linkie Claw",
+  "scripts": {
+    "start": "n8n start"
+  },
+  "dependencies": {
+    "n8n": "latest"
+  }
+}

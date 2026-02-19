@@ -1,0 +1,5 @@
+[build]
+builder = "RAILPACK"
+
+[deploy]
+startCommand = "n8n start"
