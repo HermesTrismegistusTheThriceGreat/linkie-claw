@@ -1,12 +1,7 @@
-FROM node:20-slim
+FROM n8nio/n8n
 
-# Install n8n globally on a Debian-based image to avoid Alpine networking
-# issues with Railway's private networking (musl DNS resolution problems)
-RUN npm install -g n8n
+ENV ENABLE_ALPINE_PRIVATE_NETWORKING=true
 
 EXPOSE 5678
 
-COPY startup.sh /startup.sh
-RUN chmod +x /startup.sh
-
-CMD ["/startup.sh"]
+CMD ["n8n", "start"]
