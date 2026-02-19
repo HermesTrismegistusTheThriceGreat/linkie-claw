@@ -4,4 +4,4 @@ ENV ENABLE_ALPINE_PRIVATE_NETWORKING=true
 
 EXPOSE 5678
 
-CMD ["n8n", "start"]
+CMD ["start"]
