@@ -1,10 +1,11 @@
 FROM n8nio/n8n:latest
 
-# Expose the default n8n port
+USER root
+RUN apk add --no-cache postgresql16-client
+USER node
+
 EXPOSE 5678
 
-# No extra installation needed for basic usage, but can be added here.
-# Example:
-# USER root
-# RUN apk add --no-cache python3
-# USER node
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
