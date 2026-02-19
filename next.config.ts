@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   turbopack: {},
   images: {
     remotePatterns: [
@@ -16,6 +17,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "media.licdn.com",
       },
+      ...(process.env.R2_PUBLIC_URL ? [{
+        protocol: "https" as const,
+        hostname: new URL(process.env.R2_PUBLIC_URL).hostname,
+      }] : []),
     ],
   },
 };

@@ -486,7 +486,6 @@ export async function getLinkedInAccessToken(userId: string): Promise<string | n
   const account = await db
     .select()
     .from(accounts)
-    // @ts-ignore - drizzle-orm type inference issue with multi-file schema
     .where(and(eq(accounts.userId, userId), eq(accounts.provider, "linkedin")))
     .limit(1);
 
@@ -607,13 +606,13 @@ export async function getPostsOverTime(userId: string, days: number = 30) {
 
   const postsData = await db
     .select({
-      date: sql<string>`DATE(${posts.created_at})`,
+      date: sql<string>`TO_CHAR(${posts.created_at}::date, 'YYYY-MM-DD')`,
       count: sql<number>`COUNT(*)`,
     })
     .from(posts)
     .where(and(eq(posts.user_id, userId), gte(posts.created_at, startDate)))
-    .groupBy(sql`DATE(${posts.created_at})`)
-    .orderBy(sql`DATE(${posts.created_at})`);
+    .groupBy(sql`${posts.created_at}::date`)
+    .orderBy(sql`${posts.created_at}::date`);
 
   return postsData;
 }
@@ -660,14 +659,14 @@ export async function getPostsByStatus(userId: string, days: number = 30) {
 
   const postsData = await db
     .select({
-      date: sql<string>`DATE(${posts.created_at})`,
+      date: sql<string>`TO_CHAR(${posts.created_at}::date, 'YYYY-MM-DD')`,
       status: posts.status,
       count: sql<number>`COUNT(*)`,
     })
     .from(posts)
     .where(and(eq(posts.user_id, userId), gte(posts.created_at, startDate)))
-    .groupBy(sql`DATE(${posts.created_at})`, posts.status)
-    .orderBy(sql`DATE(${posts.created_at})`);
+    .groupBy(sql`${posts.created_at}::date`, posts.status)
+    .orderBy(sql`${posts.created_at}::date`);
 
   return postsData;
 }
@@ -683,7 +682,7 @@ export async function getPublishingTrend(userId: string, days: number = 30) {
 
   const trendData = await db
     .select({
-      date: sql<string>`DATE(${posts.published_at})`,
+      date: sql<string>`TO_CHAR(${posts.published_at}::date, 'YYYY-MM-DD')`,
       count: sql<number>`COUNT(*)`,
     })
     .from(posts)
@@ -694,8 +693,8 @@ export async function getPublishingTrend(userId: string, days: number = 30) {
         gte(posts.published_at, startDate)
       )
     )
-    .groupBy(sql`DATE(${posts.published_at})`)
-    .orderBy(sql`DATE(${posts.published_at})`);
+    .groupBy(sql`${posts.published_at}::date`)
+    .orderBy(sql`${posts.published_at}::date`);
 
   return trendData;
 }
@@ -760,7 +759,7 @@ export async function getSchedulingPatterns(userId: string, days: number = 30) {
 
   const dayOfWeekData = await db
     .select({
-      dayOfWeek: sql<number>`CAST(strftime('%w', ${posts.scheduled_at}) AS INTEGER)`,
+      dayOfWeek: sql<number>`EXTRACT(DOW FROM ${posts.scheduled_at})::integer`,
       count: sql<number>`COUNT(*)`,
     })
     .from(posts)
@@ -771,8 +770,8 @@ export async function getSchedulingPatterns(userId: string, days: number = 30) {
         sql`${posts.scheduled_at} IS NOT NULL`
       )
     )
-    .groupBy(sql`strftime('%w', ${posts.scheduled_at})`)
-    .orderBy(sql`CAST(strftime('%w', ${posts.scheduled_at}) AS INTEGER)`);
+    .groupBy(sql`EXTRACT(DOW FROM ${posts.scheduled_at})`)
+    .orderBy(sql`EXTRACT(DOW FROM ${posts.scheduled_at})`);
 
   // Map day numbers to names (0 = Sunday, 6 = Saturday)
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

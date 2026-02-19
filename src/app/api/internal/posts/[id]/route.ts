@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { posts } from "@/lib/db/schema";
@@ -29,8 +30,18 @@ type RouteContext = {
  * Returns the same camelCase JSON format as the public posts API.
  */
 export async function GET(request: NextRequest, context: RouteContext) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    log("error", "CRON_SECRET not configured");
+    return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
+  }
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const expected = `Bearer ${cronSecret}`;
+  if (
+    !authHeader ||
+    authHeader.length !== expected.length ||
+    !timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected))
+  ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

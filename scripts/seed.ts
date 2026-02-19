@@ -121,7 +121,7 @@ async function seed() {
     user_id: userId,
     linkedin_profile_url: "https://www.linkedin.com/in/joseph-seager/",
     linkedin_person_urn: "urn:li:person:abc123",
-    linkedin_connected: 1,
+    linkedin_connected: true,
     linkedin_oauth_status: "connected",
     created_at: now,
     updated_at: now,

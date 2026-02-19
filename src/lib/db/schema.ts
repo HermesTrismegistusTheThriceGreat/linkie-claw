@@ -1,24 +1,24 @@
-import { sqliteTable, text, integer, primaryKey, index } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, primaryKey, index, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createId } from "@paralleldrive/cuid2";
 
 // ============================================================================
 // Auth Tables (for Auth.js v5 with @auth/drizzle-adapter)
 // ============================================================================
 
-export const users = sqliteTable("users", {
+export const users = pgTable("users", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => createId()),
   name: text("name"),
   email: text("email").notNull(),
-  emailVerified: integer("emailVerified", { mode: "timestamp" }),
+  emailVerified: timestamp("emailVerified"),
   image: text("image"),
-  created_at: integer("created_at", { mode: "timestamp" })
+  created_at: timestamp("created_at")
     .notNull()
-    .$defaultFn(() => new Date()),
+    .defaultNow(),
 });
 
-export const accounts = sqliteTable("accounts", {
+export const accounts = pgTable("accounts", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => createId()),
@@ -37,7 +37,7 @@ export const accounts = sqliteTable("accounts", {
   session_state: text("session_state"),
 });
 
-export const sessions = sqliteTable("sessions", {
+export const sessions = pgTable("sessions", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => createId()),
@@ -45,15 +45,15 @@ export const sessions = sqliteTable("sessions", {
   userId: text("userId")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  expires: integer("expires", { mode: "timestamp" }).notNull(),
+  expires: timestamp("expires").notNull(),
 });
 
-export const verificationTokens = sqliteTable(
+export const verificationTokens = pgTable(
   "verificationTokens",
   {
     identifier: text("identifier").notNull(),
     token: text("token").notNull().unique(),
-    expires: integer("expires", { mode: "timestamp" }).notNull(),
+    expires: timestamp("expires").notNull(),
   },
   (vt) => ({
     compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
@@ -64,7 +64,7 @@ export const verificationTokens = sqliteTable(
 // Application Tables
 // ============================================================================
 
-export const posts = sqliteTable(
+export const posts = pgTable(
   "posts",
   {
     id: text("id")
@@ -76,8 +76,8 @@ export const posts = sqliteTable(
     title: text("title").notNull(),
     content: text("content").notNull(),
     image_url: text("image_url"),
-    scheduled_at: integer("scheduled_at", { mode: "timestamp" }),
-    published_at: integer("published_at", { mode: "timestamp" }),
+    scheduled_at: timestamp("scheduled_at"),
+    published_at: timestamp("published_at"),
     status: text("status", {
       enum: ["draft", "scheduled", "publishing", "published", "failed"],
     })
@@ -88,12 +88,12 @@ export const posts = sqliteTable(
     retry_count: integer("retry_count")
       .notNull()
       .default(0),
-    created_at: integer("created_at", { mode: "timestamp" })
+    created_at: timestamp("created_at")
       .notNull()
-      .$defaultFn(() => new Date()),
-    updated_at: integer("updated_at", { mode: "timestamp" })
+      .defaultNow(),
+    updated_at: timestamp("updated_at")
       .notNull()
-      .$defaultFn(() => new Date()),
+      .defaultNow(),
   },
   (table) => ({
     userIdIdx: index("posts_user_id_idx").on(table.user_id),
@@ -102,7 +102,7 @@ export const posts = sqliteTable(
   })
 );
 
-export const generations = sqliteTable(
+export const generations = pgTable(
   "generations",
   {
     id: text("id")
@@ -116,16 +116,16 @@ export const generations = sqliteTable(
     images_json: text("images_json").notNull(),
     selected_text_id: text("selected_text_id"),
     selected_image_id: text("selected_image_id"),
-    created_at: integer("created_at", { mode: "timestamp" })
+    created_at: timestamp("created_at")
       .notNull()
-      .$defaultFn(() => new Date()),
+      .defaultNow(),
   },
   (table) => ({
     userIdIdx: index("generations_user_id_idx").on(table.user_id),
   })
 );
 
-export const userSettings = sqliteTable("user_settings", {
+export const userSettings = pgTable("user_settings", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => createId()),
@@ -140,10 +140,10 @@ export const userSettings = sqliteTable("user_settings", {
   linkedin_person_urn: text("linkedin_person_urn"),
 
   // LinkedIn OAuth tokens (encrypted at application layer)
-  linkedin_connected: integer("linkedin_connected").default(0), // SQLite boolean
+  linkedin_connected: boolean("linkedin_connected").default(false),
   linkedin_access_token: text("linkedin_access_token"),
   linkedin_refresh_token: text("linkedin_refresh_token"),
-  linkedin_token_expires_at: integer("linkedin_token_expires_at", { mode: "timestamp" }),
+  linkedin_token_expires_at: timestamp("linkedin_token_expires_at"),
   linkedin_oauth_status: text("linkedin_oauth_status", {
     enum: ["connected", "disconnected", "expired"],
   }),
@@ -153,20 +153,20 @@ export const userSettings = sqliteTable("user_settings", {
 
   n8n_webhook_url: text("n8n_webhook_url"), // Per-user n8n webhook URL for publishing
 
-  created_at: integer("created_at", { mode: "timestamp" })
+  created_at: timestamp("created_at")
     .notNull()
-    .$defaultFn(() => new Date()),
-  updated_at: integer("updated_at", { mode: "timestamp" })
+    .defaultNow(),
+  updated_at: timestamp("updated_at")
     .notNull()
-    .$defaultFn(() => new Date()),
+    .defaultNow(),
 });
 
-export const linkedinOauthStates = sqliteTable("linkedin_oauth_states", {
+export const linkedinOauthStates = pgTable("linkedin_oauth_states", {
   state: text("state").primaryKey(), // Random state string
   user_id: text("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  expires_at: integer("expires_at", { mode: "timestamp" }).notNull(),
+  expires_at: timestamp("expires_at").notNull(),
 });
 
 // ============================================================================
