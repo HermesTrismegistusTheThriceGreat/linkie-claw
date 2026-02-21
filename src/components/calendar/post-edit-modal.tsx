@@ -59,6 +59,9 @@ export function PostEditModal({
       setContent(post.content);
       setScheduledAt(post.scheduledAt);
       setImageUrl(post.imageUrl || "");
+      console.log("[DEBUG] Modal opened — post.scheduledAt:", post.scheduledAt);
+      console.log("[DEBUG] Modal opened — post.scheduledAt ISO:", post.scheduledAt instanceof Date ? post.scheduledAt.toISOString() : post.scheduledAt);
+      console.log("[DEBUG] Modal opened — browser timezone:", Intl.DateTimeFormat().resolvedOptions().timeZone);
     }
   }, [post]);
 
@@ -72,6 +75,8 @@ export function PostEditModal({
       imageUrl: imageUrl || null,
     };
     console.log("[DEBUG] handleSave called. imageUrl state:", JSON.stringify(imageUrl));
+    console.log("[DEBUG] handleSave — scheduledAt Date:", scheduledAt?.toString());
+    console.log("[DEBUG] handleSave — scheduledAt ISO:", scheduledAt?.toISOString());
     console.log("[DEBUG] handleSave payload:", JSON.stringify(payload, null, 2));
     try {
       await onSave(post.id, payload);
@@ -105,7 +110,13 @@ export function PostEditModal({
       return;
     }
     const time = scheduledAt ? format(scheduledAt, "HH:mm") : "09:00";
-    const newDate = new Date(`${dateStr}T${time}`);
+    const dateTimeStr = `${dateStr}T${time}`;
+    const newDate = new Date(dateTimeStr);
+    console.log("[DEBUG] handleDateChange — input dateStr:", dateStr);
+    console.log("[DEBUG] handleDateChange — existing time (from format):", time);
+    console.log("[DEBUG] handleDateChange — combined string:", dateTimeStr);
+    console.log("[DEBUG] handleDateChange — new Date result:", newDate.toString());
+    console.log("[DEBUG] handleDateChange — new Date ISO:", newDate.toISOString());
     setScheduledAt(newDate);
   };
 
@@ -113,7 +124,14 @@ export function PostEditModal({
     const timeStr = e.target.value;
     if (!scheduledAt) return;
     const dateStr = format(scheduledAt, "yyyy-MM-dd");
-    const newDate = new Date(`${dateStr}T${timeStr}`);
+    const dateTimeStr = `${dateStr}T${timeStr}`;
+    const newDate = new Date(dateTimeStr);
+    console.log("[DEBUG] handleTimeChange — input timeStr:", timeStr);
+    console.log("[DEBUG] handleTimeChange — existing scheduledAt ISO:", scheduledAt.toISOString());
+    console.log("[DEBUG] handleTimeChange — date from format():", dateStr);
+    console.log("[DEBUG] handleTimeChange — combined string:", dateTimeStr);
+    console.log("[DEBUG] handleTimeChange — new Date result:", newDate.toString());
+    console.log("[DEBUG] handleTimeChange — new Date ISO:", newDate.toISOString());
     setScheduledAt(newDate);
   };
 
