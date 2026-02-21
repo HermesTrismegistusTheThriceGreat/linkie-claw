@@ -70,7 +70,7 @@ export function PostEditModal({
         title,
         content,
         scheduledAt,
-        imageUrl: imageUrl || undefined,
+        imageUrl: imageUrl || null,
       });
       onOpenChange(false);
     } finally {
