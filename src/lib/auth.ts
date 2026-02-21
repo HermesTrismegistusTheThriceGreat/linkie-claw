@@ -17,6 +17,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     strategy: "jwt",
   },
   debug: true, // TEMPORARY: Enable auth debug logging in production
+  logger: {
+    error(code, ...message) {
+      console.error("[auth][ERROR]", code, JSON.stringify(message));
+    },
+    warn(code) {
+      console.warn("[auth][WARN]", code);
+    },
+    debug(code, ...message) {
+      console.log("[auth][DEBUG]", code, JSON.stringify(message));
+    },
+  },
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -34,8 +45,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/login",
     error: "/login", // Redirect auth errors to login page with error param
   },
+  events: {
+    signIn(message) {
+      console.log("[auth][EVENT] signIn:", JSON.stringify(message));
+    },
+    linkAccount(message) {
+      console.log("[auth][EVENT] linkAccount:", JSON.stringify(message));
+    },
+  },
   callbacks: {
     jwt({ token, user }) {
+      console.log("[auth][CALLBACK] jwt called, user:", user?.id ?? "none");
       if (user) {
         token.id = user.id;
       }
