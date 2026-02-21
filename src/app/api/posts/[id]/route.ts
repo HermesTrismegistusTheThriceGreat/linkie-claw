@@ -75,14 +75,19 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
+  log("info", "[DEBUG] PATCH raw body received", { postId: id, body: JSON.stringify(body) });
+
   const result = updatePostSchema.safeParse(body);
 
   if (!result.success) {
+    log("error", "[DEBUG] PATCH validation failed", { postId: id, errors: JSON.stringify(result.error.flatten()) });
     return NextResponse.json(
       { error: "Validation failed", details: result.error.flatten() },
       { status: 400 }
     );
   }
+
+  log("info", "[DEBUG] PATCH validated data", { postId: id, data: JSON.stringify(result.data) });
 
   try {
     // Check if post exists for this user
@@ -91,14 +96,20 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
+    log("info", "[DEBUG] PATCH existing image_url", { postId: id, existingImageUrl: existingPost.image_url });
+
     // Map API input to snake_case for DB
     const dbData = mapApiInputToDb(result.data) as Partial<NewPost>;
+
+    log("info", "[DEBUG] PATCH mapped dbData", { postId: id, dbData: JSON.stringify(dbData) });
 
     const dbPost = await updatePost(id, dbData, userId);
 
     if (!dbPost) {
       throw new Error("Failed to update post");
     }
+
+    log("info", "[DEBUG] PATCH post after update", { postId: id, newImageUrl: dbPost.image_url });
 
     const post = mapDbPostToFrontend(dbPost);
     log("info", "Post updated", { postId: id, userId });

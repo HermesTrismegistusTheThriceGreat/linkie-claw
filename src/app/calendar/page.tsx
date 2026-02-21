@@ -82,22 +82,30 @@ export default function CalendarPage() {
   };
 
   const handleSave = async (id: string, data: Partial<Post>) => {
+    const requestBody = {
+      ...data,
+      scheduledAt: data.scheduledAt?.toISOString(),
+    };
+    console.log("[DEBUG] Calendar handleSave — data received:", JSON.stringify(data, null, 2));
+    console.log("[DEBUG] Calendar handleSave — request body:", JSON.stringify(requestBody, null, 2));
+    console.log("[DEBUG] Calendar handleSave — imageUrl in body:", JSON.stringify(requestBody.imageUrl));
+
     const response = await fetch(`/api/posts/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...data,
-        scheduledAt: data.scheduledAt?.toISOString(),
-      }),
+      body: JSON.stringify(requestBody),
     });
-    
+
+    const responseBody = await response.json();
+    console.log("[DEBUG] Calendar handleSave — response status:", response.status);
+    console.log("[DEBUG] Calendar handleSave — response body:", JSON.stringify(responseBody, null, 2));
+
     if (response.ok) {
       await fetchPosts();
       toast.success("Post updated successfully!");
     } else {
-      const error = await response.json();
-      toast.error(error.message || "Failed to update post");
-      throw new Error(error.message || "Failed to update post");
+      toast.error(responseBody.message || "Failed to update post");
+      throw new Error(responseBody.message || "Failed to update post");
     }
   };
 

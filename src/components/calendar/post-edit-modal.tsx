@@ -65,13 +65,16 @@ export function PostEditModal({
   const handleSave = async () => {
     if (!post) return;
     setIsSaving(true);
+    const payload = {
+      title,
+      content,
+      scheduledAt,
+      imageUrl: imageUrl || null,
+    };
+    console.log("[DEBUG] handleSave called. imageUrl state:", JSON.stringify(imageUrl));
+    console.log("[DEBUG] handleSave payload:", JSON.stringify(payload, null, 2));
     try {
-      await onSave(post.id, {
-        title,
-        content,
-        scheduledAt,
-        imageUrl: imageUrl || null,
-      });
+      await onSave(post.id, payload);
       onOpenChange(false);
     } finally {
       setIsSaving(false);
@@ -90,7 +93,9 @@ export function PostEditModal({
   };
 
   const handleRemoveImage = () => {
+    console.log("[DEBUG] Remove Image clicked. imageUrl before:", imageUrl);
     setImageUrl("");
+    console.log("[DEBUG] setImageUrl called with empty string");
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
