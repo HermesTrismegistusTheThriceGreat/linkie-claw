@@ -16,7 +16,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: "jwt",
   },
-  debug: process.env.NODE_ENV === "development",
+  debug: true, // TEMPORARY: Enable auth debug logging in production
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
