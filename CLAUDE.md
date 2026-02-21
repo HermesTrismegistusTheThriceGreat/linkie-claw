@@ -49,6 +49,18 @@ npm run db:studio    # Open Drizzle Studio (DB browser)
 
 ---
 
+## Documentation-Driven Decisions
+
+**Read the docs first. Always.**
+
+When troubleshooting errors or making architecture decisions involving a specific technology, consult the official documentation before attempting fixes. Documentation is the true north — not trial-and-error, not guessing, not Stack Overflow alone.
+
+- Before fixing a tech-specific bug, dispatch a research agent to pull the relevant official docs
+- Reference docs for active technologies (Railway, n8n, Drizzle, Next.js, Auth.js, LinkedIn API) belong in `docs/` — add them when discovered
+- Cross-technology integrations (e.g., n8n + Railway + PostgreSQL) require extra care — assumptions from one technology frequently do not apply to another
+
+---
+
 ## How I Want You to Work
 
 ### Before Coding
