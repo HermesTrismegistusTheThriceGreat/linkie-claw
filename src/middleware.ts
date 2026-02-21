@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Auth.js session token cookie name
-const AUTH_TOKEN_NAME = "authjs.session-token";
+// Auth.js session token cookie name (__Secure- prefix is used on HTTPS)
+const AUTH_TOKEN_NAME = "__Secure-authjs.session-token";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
