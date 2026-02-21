@@ -169,3 +169,6 @@ export async function GET(request: NextRequest) {
     recovered: stalePosts.length,
   });
 }
+
+// Railway Cron Webhook Trigger sends POST requests
+export { GET as POST };
