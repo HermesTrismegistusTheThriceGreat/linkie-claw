@@ -9,7 +9,6 @@ import {
   incrementPostRetryCount,
   reschedulePostForRetry,
   resetStalePost,
-  getLinkedInAccessToken,
 } from "@/lib/db/queries";
 import { log } from "@/lib/logger";
 
@@ -68,18 +67,12 @@ export async function GET(request: NextRequest) {
         // Set status to 'publishing'
         await markPostAsPublishing(post.id);
 
-        // Get user's LinkedIn credentials
+        // Get user settings for per-user n8n webhook URL override
         const settings = await getUserSettings(post.user_id);
-        if (!settings?.linkedin_connected || !settings.linkedin_person_urn) {
-          throw new Error("User LinkedIn not connected or missing person URN");
-        }
-
-        // Get access token (from settings or accounts table)
-        const accessToken = await getLinkedInAccessToken(post.user_id);
-        // accessToken is optional — n8n manages OAuth credentials directly
 
         // POST to n8n webhook (per-user URL, falling back to env var)
-        const n8nUrl = settings.n8n_webhook_url || process.env.N8N_WEBHOOK_URL;
+        // n8n workflow handles LinkedIn OAuth and person URN directly
+        const n8nUrl = settings?.n8n_webhook_url || process.env.N8N_WEBHOOK_URL;
         if (!n8nUrl) {
           throw new Error("N8N_WEBHOOK_URL not configured");
         }
@@ -90,10 +83,8 @@ export async function GET(request: NextRequest) {
           body: JSON.stringify({
             postId: post.id,
             userId: post.user_id,
-            personUrn: settings.linkedin_person_urn,
             content: post.content,
             imageUrl: post.image_url,
-            ...(accessToken && { accessToken }),
           }),
         });
 
